@@ -1,0 +1,9 @@
+node_modules
+nodemon.json
+.DS_Store
+public/.DS_Store
+.vscode
+package-lock.json
+npm-debug.log
+/*.env
+test/config.json
