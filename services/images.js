@@ -55,32 +55,32 @@ just want a thumbnail. So this happens automatically.
 
 */
 
-async function saveImageBuffer(key,imageBuffer,options={convertToJpeg: true, generateThumbnail: true}) {
+async function saveImageToAWS(key,buffer,options={convertToJpeg: true, generateThumbnail: true}) {
     let jobs = [];
-    let imageBufferToSave = imageBuffer;
-    let thumbnailBufferToSave;
+    let bufferForAWS = buffer;
+    let thumbnailBufferForAWS;
 
     if (options.convertToJpeg) {
-        jobs.push(convertToJpeg(imageBuffer));
+        jobs.push(convertToJpeg(buffer));
     }
     if (options.generateThumbnail) {
-        jobs.push(generateThumbnail(imageBuffer));
+        jobs.push(generateThumbnail(buffer));
     }
 
     let results = await Promise.all(jobs);
 
     if (options.convertToJpeg) {
-        imageBufferToSave = results.shift();
+        bufferForAWS = results.shift();
     }
     if (options.generateThumbnail) {
-        thumbnailBufferToSave = results.shift();
+        thumbnailBufferForAWS = results.shift();
     }
 
     let s3 = new AWS.S3();
 
     let saveImageJob = new Promise( (resolve,reject) => {
         let params = {
-            Body: imageBufferToSave, 
+            Body: bufferForAWS, 
             Bucket: process.env.AWS_BUCKET_NAME, 
             Key: key
             };
@@ -95,10 +95,10 @@ async function saveImageBuffer(key,imageBuffer,options={convertToJpeg: true, gen
     });
     jobs.push(saveImageJob);
 
-    if (thumbnailBufferToSave) {
+    if (thumbnailBufferForAWS) {
         let saveThumbnailJob = new Promise( (resolve,reject) => {
             let params = {
-                Body: thumbnailBufferToSave, 
+                Body: thumbnailBufferForAWS, 
                 Bucket: process.env.AWS_BUCKET_NAME, 
                 Key: key+'-thumb'
                 };
@@ -120,7 +120,7 @@ async function saveImageBuffer(key,imageBuffer,options={convertToJpeg: true, gen
 
 // Size undefined by default.
 // size=='thumb' Loads the thumnail.
-function getImageBuffer(key,size) {
+function loadImageFromAWS(key,size) {
     // Load main image
 
     if (size) {
@@ -187,8 +187,8 @@ function deleteImageBuffer(imageId) {
 
 module.exports = {
     deleteImageBuffer,
-    getImageBuffer,
-    saveImageBuffer,
+    loadImageFromAWS,
+    saveImageToAWS,
     generateThumbnail,
     convertToJpeg
 }

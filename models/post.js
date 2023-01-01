@@ -21,8 +21,8 @@ const postSchema = new Schema({
     summary: String, // Summary of what happened after
     body: String,
     image: {
-        type: imageSchema,
-        default: {}
+        type: Schema.Types.ObjectId,
+        ref: 'user'
     },
     draft: {
         type: Boolean,
@@ -32,5 +32,6 @@ const postSchema = new Schema({
 })
 const Post = mongoose.model('post',postSchema)
 postSchema.index({ created:1, user: 1})
+
 
 module.exports = { Post }

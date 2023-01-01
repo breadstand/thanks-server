@@ -15,18 +15,25 @@ This format mimics the form returned by the multer package.
 */
 
 const imageSchema = new Schema({
-    key: String, // The name to use for storing in AWS 
+  created: {
+    type: Date,
+    default: Date.now
+  },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'user'
+  },
+
+  key: String, // The name to use for storing in AWS 
+  mimetype: String,
+  originalname: String,
+  thumbnail: {
     mimetype: String,
-    originalname: String,
-    size: Number,
-    buffer: Buffer,
-    ETag: String, // Not sure this is used.
-    thumbnail: {
-        buffer: Buffer,
-        mimetype: String,
-        size: Number,
-        ETag: String // Not sure if this is used
-    }
+  }
 });
-module.exports =  { imageSchema };
+
+const Image = mongoose.model('image', imageSchema)
+imageSchema.index({ created: 1, user: 1 })
+
+module.exports = { Image };
 
