@@ -14,7 +14,10 @@ const userSchema = new Schema({
         type: Number,
         default: 0
     },
-    choiceStarted: Date
+    choiceStarted: Date,
+    identity: String,
+    intention: String,
+    actions: String
 })
 const User = mongoose.model('user',userSchema)
 userSchema.index({ email: 1, unique: true })

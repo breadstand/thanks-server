@@ -24,7 +24,14 @@ router.get('/',(req,res) => {
 
 router.post('/',(req,res) => {
 
-    let postData = safeCopy(req.body,['summary','title','body','postDate','image'])
+    let postData = safeCopy(req.body,
+            ['summary',
+            'title',
+            'body',
+            'postDate',
+            'image',
+            'mood',
+            'scale'])
 
     let post = new Post(postData)
     post.user = req.userId;

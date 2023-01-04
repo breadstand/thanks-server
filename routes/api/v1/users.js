@@ -20,7 +20,9 @@ router.get('/:id',(req,res) => {
 
 router.post('/:id',(req,res) => {
 
-    let userUpdate = safeCopy(req.body,['choices','choiceSelected','choiceStarted'])
+    let userUpdate = safeCopy(req.body,
+            ['choices','choiceSelected','choiceStarted',
+            'intention','identity','actions'])
 
     let options = {
         returnDocument: 'after',
