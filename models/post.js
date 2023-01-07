@@ -15,6 +15,7 @@ const postSchema = new Schema({
         type: Schema.Types.ObjectId, 
         ref: 'user'
     },
+    category: String,
     title: String, // Title (actually the choice from previous post)
     mood: String, // Mood as a String
     scale: Number, // Feeling on a scale of 1-10

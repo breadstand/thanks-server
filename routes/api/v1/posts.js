@@ -7,7 +7,7 @@ const {safeCopy} = require('../../../utils/utils')
 
 router.get('/',(req,res) => {
 
-    let limit = 30;
+    let limit = 10;
 
     Post.find({user: req.userId, draft: false})
         .sort({created: 'desc'})
@@ -22,6 +22,8 @@ router.get('/',(req,res) => {
     })
 })
 
+
+
 router.post('/',(req,res) => {
 
     let postData = safeCopy(req.body,
@@ -29,6 +31,7 @@ router.post('/',(req,res) => {
             'title',
             'body',
             'postDate',
+            'category',
             'image',
             'mood',
             'scale'])
@@ -44,6 +47,19 @@ router.post('/',(req,res) => {
                 data: savedPost
             }) 
         }
+    })
+})
+
+router.get('/:id',(req,res) => {
+    Post.findById(req.params.id)
+    .then( post => {
+        res.json({
+            success: true,
+            data: post
+        })
+    }).catch(err => {
+        console.log(err)
+        res.status(500).send('Internal server error')
     })
 })
 
