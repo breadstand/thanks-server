@@ -25,6 +25,11 @@ const imagesRoutes = require('./routes/api/v1/images')
 app.use('/api/v1/images',verifyToken)
 app.use('/api/v1/images',imagesRoutes)
 
+const habitTrackerRoutes = require('./routes/api/v1/habit-trackers')
+app.use('/api/v1/habit-trackers',verifyToken)
+app.use('/api/v1/habit-trackers',habitTrackerRoutes)
+
+
 
 app.get('/',function(req,res) {
     res.send('Hello from server');
