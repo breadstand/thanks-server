@@ -5,11 +5,14 @@ const User = require('../../../models/user').User
 const {safeCopy} = require('../../../utils/utils')
 
 
+
+
+
 router.get('/',(req,res) => {
 
     let limit = 10;
 
-    Post.find({user: req.userId, draft: false})
+    Post.find({user: req.userId, draft: false,deleted: {$ne: true}})
         .sort({created: 'desc'})
         .limit(limit)
         .then( posts => {
@@ -34,9 +37,11 @@ router.post('/',(req,res) => {
             'category',
             'image',
             'mood',
+            'blocks',
             'scale'])
-
     let post = new Post(postData)
+
+
     post.user = req.userId;
     post.save((error, savedPost) => {
         if (error) {
@@ -63,18 +68,26 @@ router.get('/:id',(req,res) => {
     })
 })
 
-router.post('/:id',(req,res) => {
-
-    let postData = req.body;
-
-    postUpdate = safeCopy(postData,['summary','title','choices','choiceSelected'])
-    postUpdate._id = req.params.id
-    postUpdate.user = req.userId;
+router.put('/:id',(req,res) => {
 
     let options = {
         returnDocument: 'after',
     }
-    Post.findByIdAndUpdate(req.params.id,postUpdate,options)
+
+    let postUpdate = safeCopy(req.body,
+        ['summary',
+        'title',
+        'body',
+        'postDate',
+        'category',
+        'image',
+        'mood',
+        'deleted',
+        'blocks',
+        'scale'])
+
+    Post.findOneAndUpdate(
+        { _id: req.params.id, user: req.userId},postUpdate,options)
         .then( updatedPost => {
             res.status(200).json({
                 success: true,
@@ -85,6 +98,7 @@ router.post('/:id',(req,res) => {
             res.status(500).send('Internal server error')
         })
 })
+
 
 
 module.exports = router

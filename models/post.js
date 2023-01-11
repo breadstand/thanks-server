@@ -28,11 +28,22 @@ const postSchema = new Schema({
     draft: {
         type: Boolean,
         default: false
-    }
+    },
+    deleted: {
+        type: Boolean,
+        default: false
+    },
+    blocks: [
+        {
+            title: String,
+            text: String,
+            list: [String]
+        }
+    ]
 
 })
 const Post = mongoose.model('post',postSchema)
-postSchema.index({ created:1, user: 1})
+postSchema.index({  user: 1,created: 1})
 
 
 module.exports = { Post }
