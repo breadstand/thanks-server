@@ -1,23 +1,16 @@
 const express = require('express')
 const router = express.Router()
-const Post = require('../../../models/post').Post
 const User = require('../../../models/user').User
 const {safeCopy} = require('../../../utils/utils')
 
 
-
-
-
 router.get('/',(req,res) => {
-
-    // ending_before
-    // starting_after
     let query = {
         user: req.userId, 
         draft: false,
         deleted: {$ne: true}
     }
-    let limit = 9;
+    let limit = 10;
     if (req.query.limit) {
         limit = Number(req.query.limit)
     }
@@ -29,17 +22,10 @@ router.get('/',(req,res) => {
     }
     Post.find(query)
         .sort({lastUpdate: 'desc',created: 'desc'})
-        .limit(limit+1)
+        .limit(limit)
         .then( posts => {
-            // has_more
-            let has_more = false
-            if (posts.length > limit) {
-                has_more = true
-                posts.pop()
-            }
         res.json({ success: true,
-                data: posts,
-                has_more: has_more
+                data: posts
         })
 
     }).catch(err => {

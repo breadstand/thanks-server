@@ -29,6 +29,9 @@ const habitTrackerRoutes = require('./routes/api/v1/habit-trackers')
 app.use('/api/v1/habit-trackers',verifyToken)
 app.use('/api/v1/habit-trackers',habitTrackerRoutes)
 
+const membershipRoutes = require('./routes/api/v1/memberships')
+app.use('/api/v1/memberships',verifyToken)
+app.use('/api/v1/memberships',membershipRoutes)
 
 
 app.get('/',function(req,res) {

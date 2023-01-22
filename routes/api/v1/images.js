@@ -43,10 +43,13 @@ router.post('/',
   });
 
 
-router.get('/:imageId', async (req, res) => {
+router.get('/:image', async (req, res) => {
   try {
+    // image can be an image._id or image._id + '.jpg'
+    let imageId = req.params.image.split('.')[0]
+
     let image = await Image.findOne({
-        _id: req.params.imageId,
+        _id: imageId,
         user: req.userId
     })
     let buffer = await loadImageFromAWS(image.key)
@@ -61,8 +64,6 @@ router.get('/:imageId', async (req, res) => {
   }
 });
 
-
-  
 
 
 module.exports = router

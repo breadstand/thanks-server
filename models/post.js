@@ -7,7 +7,7 @@ const postSchema = new Schema({
         type: Date,
         default: Date.now
         },
-    postDate: {
+    lastUpdate: {
         type: Date,
         default: Date.now
         },    
@@ -23,7 +23,7 @@ const postSchema = new Schema({
     body: String,
     image: {
         type: Schema.Types.ObjectId,
-        ref: 'user'
+        ref: 'image'
     },
     draft: {
         type: Boolean,
@@ -33,17 +33,20 @@ const postSchema = new Schema({
         type: Boolean,
         default: false
     },
-    blocks: [
-        {
-            title: String,
-            text: String,
-            list: [String]
-        }
-    ]
-
+    identity: String,
+    intention: String,
+    feelings: String,
+    instructions: String,
+    choices: [String],
+    choiceSelected: Number,
+    unexpected: String,
+    recast_situation: String,
+    recast_negative_beliefs: [String],
+    recast_positive_beliefs: [String],
+    recast_imagine: [String]
 })
 const Post = mongoose.model('post',postSchema)
-postSchema.index({  user: 1,created: 1})
+postSchema.index({  user: 1,postDate: 1})
 
 
 module.exports = { Post }

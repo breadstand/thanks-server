@@ -29,10 +29,13 @@ djohnson@Davids-MacBook-Air utils % node utils.js
 
 
 function verifyToken(req,res,next) {
-    if(!req.headers.authorization) {
-        return res.status(401).send('Unauthorized request')
+    let token = null
+    if (req.headers.authorization) {
+        token = req.headers.authorization.split(' ')[1]
+    } 
+    else if (req.query.token) {
+        token = req.query.token
     }
-    let token = req.headers.authorization.split(' ')[1]
     if (token === 'null') {
         return res.status(401).send('Unauthorized request')
     }
