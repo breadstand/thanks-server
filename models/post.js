@@ -37,10 +37,13 @@ const postSchema = new Schema({
     intention: String,
     feelings: String,
     instructions: String,
+    action_items: [String],
     choices: [String],
     choiceSelected: Number,
     unexpected: String,
     recast_situation: String,
+    evidence: String,
+    relabeled_evidence: String,
     recast_negative_beliefs: [String],
     recast_positive_beliefs: [String],
     recast_imagine: [String]

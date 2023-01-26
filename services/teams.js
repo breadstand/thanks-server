@@ -1108,6 +1108,9 @@ function updateMember(memberid, update) {
 	if (update.owner !== undefined) {
 		member_update.owner = update.owner;
 	}
+	if (update.image) {
+		member_update.image = update.image
+	}
 
 	return Membership.findOneAndUpdate({
 		_id: memberid,

@@ -43,9 +43,10 @@ router.put('/',(req,res) => {
     let promises = []
     for (i = 0; i < req.body.length; i++) {
         let tracker = req.body[i]
+        tracker.user = req.userId
         //console.log(tracker)
         let promise = HabitTracker.findOneAndUpdate(
-                { _id: tracker._id,user: req.userId},tracker,{new: true}).exec()
+                { _id: tracker._id,user: req.userId},tracker,{new: true,upsert: true}).exec()
         promises.push(promise)
     }
 
