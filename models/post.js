@@ -51,7 +51,7 @@ const postSchema = new Schema({
     action_items_done: [Boolean],
 })
 const Post = mongoose.model('post',postSchema)
-postSchema.index({  user: 1,postDate: 1})
+postSchema.index({  user: 1,lastUpdate: 1})
 
 
 module.exports = { Post }
