@@ -7,7 +7,6 @@ const {safeCopy} = require('../../../utils/utils')
 
 
 
-
 router.get('/',(req,res) => {
 
     // ending_before
@@ -26,6 +25,9 @@ router.get('/',(req,res) => {
     }
     if (req.query.draft) {
         query.draft = req.query.draft
+    }
+    if (req.query.ending_before) {
+        query._id = { $lt: req.query.ending_before }
     }
     Post.find(query)
         .sort({lastUpdate: 'desc',created: 'desc'})

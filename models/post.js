@@ -35,18 +35,20 @@ const postSchema = new Schema({
     },
     identity: String,
     intention: String,
-    feelings: String,
     instructions: String,
-    action_items: [String],
     choices: [String],
     choiceSelected: Number,
     unexpected: String,
-    recast_situation: String,
-    evidence: String,
-    relabeled_evidence: String,
-    recast_negative_beliefs: [String],
-    recast_positive_beliefs: [String],
-    recast_imagine: [String]
+    recast_situation: String, // Deprecated
+    evidence: String, // Deprecated
+    recast_imagine: [String], // Deprecated
+    current_situation: String, // New
+    negative_beliefs: [String],  
+    preferred_beliefs: [String],
+    preferred_feelings: String, 
+    preferred_thoughts: String,
+    action_items: [String],
+    action_items_done: [Boolean],
 })
 const Post = mongoose.model('post',postSchema)
 postSchema.index({  user: 1,postDate: 1})
