@@ -108,6 +108,7 @@ const userSchema = new Schema({
     lastlogin: Date,
     name: String,
     password: String,
+    city: String,
     emails: [{email: String, verified: Boolean, code: String, failed: Number}],
     active: {
         type: Boolean,
@@ -155,7 +156,13 @@ const userSchema = new Schema({
         default: 'America/New_York'
     },
     verifyCode: String,
-    verifyCodeExpiration: Number
+    verifyCodeExpiration: Number,
+    backgroundImage: {
+        type: Schema.Types.ObjectId,
+        ref: 'image'
+    },
+    backgroundImageWidth: Number,
+    backgroundImageHeight: Number, 
 });
 
 const User = mongoose.model('user',userSchema);

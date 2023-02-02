@@ -47,11 +47,13 @@ const postSchema = new Schema({
     preferred_beliefs: [String],
     preferred_feelings: String, 
     preferred_thoughts: String,
-    action_items: [String],
-    action_items_done: [Boolean],
+    action_items: [{
+        action: String,
+        complete: Boolean
+    }],
 })
 const Post = mongoose.model('post',postSchema)
-postSchema.index({  user: 1,lastUpdate: 1})
+postSchema.index({  user: 1,lastUpdate: 1,category: 1})
 
 
 module.exports = { Post }

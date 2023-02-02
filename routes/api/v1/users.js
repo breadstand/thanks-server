@@ -18,11 +18,11 @@ router.get('/:id',(req,res) => {
 })
 
 
-router.post('/:id',(req,res) => {
+router.put('/:id',(req,res) => {
 
     let userUpdate = safeCopy(req.body,
-            ['choices','choiceSelected','choiceStarted',
-            'intention','identity','actions'])
+            ['name','city','backgroundImage',
+            'backgroundImageWidth','backgroundImageHeight'])
 
     let options = {
         returnDocument: 'after',
@@ -33,6 +33,7 @@ router.post('/:id',(req,res) => {
             res.status(200).json(updatedUser)
         })
         .catch( err => {
+            console.log(err)
             res.status(500).send('Internal server error')
         })
 })

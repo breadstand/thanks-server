@@ -29,7 +29,9 @@ const imageSchema = new Schema({
   originalname: String,
   thumbnail: {
     mimetype: String,
-  }
+  },
+  width: Number,
+  height: Number
 });
 
 const Image = mongoose.model('image', imageSchema)
