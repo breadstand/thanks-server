@@ -1,8 +1,10 @@
 const { LexModelBuildingService } = require('aws-sdk')
 const express = require('express')
+const { UserInstance } = require('twilio/lib/rest/conversations/v1/user')
 const router = express.Router()
 const User = require('../../../models/user').User
 const {safeCopy} = require('../../../utils/utils')
+const users = require('../../../services/users')
 
 router.get('/:id',(req,res) => {
 
@@ -16,6 +18,8 @@ router.get('/:id',(req,res) => {
         res.status(500).send('Internal server error')
     })
 })
+
+
 
 
 router.put('/:id',(req,res) => {

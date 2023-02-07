@@ -530,7 +530,7 @@ async function verifyCode(email,code) {
 	let result = {
 		success: false,
 		error: "The code is invalid.",
-		user: null
+		data: null
 	};
 
 	let user = await findUserByEmail(email);
@@ -545,7 +545,7 @@ async function verifyCode(email,code) {
 		user.verifyCode = undefined;
 		user.verifyCodeExpiration = undefined;
 		await user.save();
-		result.user = user;
+		result.data = user;
 		result.error = null;
 		result.success = true;
 		return result;

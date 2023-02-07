@@ -2,22 +2,21 @@ const express = require('express')
 const router = express.Router()
 const Membership = require('../../../models/membership').Membership
 const User = require('../../../models/user').User
-const {safeCopy} = require('../../../utils/utils')
+const { safeCopy } = require('../../../utils/utils')
 const teams = require('../../../services/teams')
 const users = require('../../../services/users')
 const { UserInstance } = require('twilio/lib/rest/conversations/v1/user')
 
-router.get('/', async (req,res) => {
+router.get('/', async (req, res) => {
 
     try {
         let memberships = []
         // By default we will return the users memberships.
         // If a teamid is provided then we return team members
         if (req.query.teamid) {
-            memberships = await teams.getMemberships(req.query.teamid) 
+            memberships = await teams.getMemberships(req.query.teamid)
             // Make sure user is on the team
-            let foundUser = memberships.find( (member) => {
-                console.log(member.user,req.userId,member.user==req.userId)
+            let foundUser = memberships.find((member) => {
                 if (member.user == req.userId) {
                     return member
                 }
@@ -37,9 +36,10 @@ router.get('/', async (req,res) => {
                 memberships = [membership]
             }
         }
-        res.json({ success: true,
+        res.json({
+            success: true,
             data: memberships
-        })            
+        })
     }
     catch (err) {
         console.log(err)
@@ -51,27 +51,28 @@ router.get('/', async (req,res) => {
 
 
 
-router.post('/',(req,res) => {
-    res.status(500).send('Internal server error')
-/*
-    let postData = req.body
-    delete req.body._id
-    let post = new Post(postData)
-    post.user = req.userId;
-    post.save()
-    .then(savedPost => {
+router.post('/', async (req, res) => {
+
+    try {
+        let ownerId = req.body.owner
+        let owner = await teams.getMemberById(ownerId)
+        if (owner.user != req.userId) {
+            throw `User ${req.userId} is not ${owner.name}/${owner.user} `
+        }
+        let newMember = await teams.addMemberByContact(req.body.team,
+            owner, req.body.name, req.body.contact)
         res.status(200).send({
             success: true,
-            data: savedPost
+            data: newMember
         })
-    }).catch( err =>{
+    } catch (err) {
         console.log(err)
         res.status(500).send('Internal server error')
-    })
-    */
+    }
+
 })
 
-router.get('/:id',(req,res) => {
+router.get('/:id', (req, res) => {
     res.status(500).send('Internal server error')
     /*
     Post.findById(req.params.id)
@@ -86,7 +87,7 @@ router.get('/:id',(req,res) => {
     })*/
 })
 
-router.put('/:id',async (req,res) => {
+router.put('/:id', async (req, res) => {
 
     try {
         let update = req.body
@@ -95,7 +96,7 @@ router.put('/:id',async (req,res) => {
         // Authorization requirements for updating (1 of 2 conditions):
         // 1. The user is an owner and the membership is part of the team
         let member = await teams.getMember(memberid)
-        let usersMembership = await teams.getMemberByUserId(member.team,req.userId)
+        let usersMembership = await teams.getMemberByUserId(member.team, req.userId)
         if (usersMembership.owner) {
             authorized = true
         }
@@ -105,7 +106,7 @@ router.put('/:id',async (req,res) => {
             authorized = true
         }
         if (authorized) {
-            let membership = await teams.updateMember(memberid,update)
+            let membership = await teams.updateMember(memberid, update)
             res.json({
                 success: true,
                 data: [membership]

@@ -33,6 +33,11 @@ const membershipRoutes = require('./routes/api/v1/memberships')
 app.use('/api/v1/memberships',verifyToken)
 app.use('/api/v1/memberships',membershipRoutes)
 
+const thanksPostsRoutes = require('./routes/api/v1/thanksposts')
+app.use('/api/v1/thanksposts',verifyToken)
+app.use('/api/v1/thanksposts',thanksPostsRoutes)
+
+
 
 app.get('/',function(req,res) {
     res.send('Hello from server');

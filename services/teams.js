@@ -1111,6 +1111,18 @@ function updateMember(memberid, update) {
 	if (update.image) {
 		member_update.image = update.image
 	}
+	if (update.wentTo) {
+		member_update.wentTo = update.wentTo
+	}
+	if (update.from) {
+		member_update.from = update.from
+	}
+	if (update.livesIn) {
+		member_update.livesIn = update.livesIn
+	}
+	if (update.workedAt) {
+		member_update.workedAt = update.workedAt
+	}
 
 	return Membership.findOneAndUpdate({
 		_id: memberid,

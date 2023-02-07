@@ -47,7 +47,7 @@ const postSchema = new Schema({
     preferred_beliefs: [String],
     preferred_feelings: String, 
     preferred_thoughts: String,
-    action_items: [{
+    actionItems: [{
         action: String,
         complete: Boolean
     }],

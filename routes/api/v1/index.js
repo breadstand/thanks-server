@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto')
 const safeCopy = require('../../../utils/utils').safeCopy
 const User = require('../../../models/user').User
+const users = require('../../../services/users')
 
 
 router.get('/',(req,res) => {
@@ -63,5 +64,42 @@ router.post('/login', (req,res) => {
         }
     })
 })
+
+
+
+router.post('/send-email-code',async (req,res) => {
+    try{
+        let user = await users.sendCodeToVerifyEmail(req.body.email)
+        res.json({
+            success: true
+        })
+
+    } catch(err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+
+})
+
+
+router.post('/verify-code',async (req,res) => {
+    try{
+        let result = await users.verifyCode(req.body.email,req.body.code)
+        if (result.data) {
+            let user = result.data._id // user is in result.data
+            let payload = {subject: user._id }
+            result.token = jwt.sign(payload,process.env.JWOTKEY)
+            result.data.password = undefined
+            res.status(200).send(result)     
+        } else {
+            res.json(result)
+        }
+    } catch(err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+
+})
+
 
 module.exports = router

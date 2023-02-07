@@ -47,6 +47,10 @@ const membershipSchema = new Schema({
         ref: 'image'
     },
     verifyCode: String,
+    wentTo: String,
+    workedAt: String,
+    livesIn: String,
+    from: String
 });
 
 
