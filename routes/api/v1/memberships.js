@@ -27,14 +27,6 @@ router.get('/', async (req, res) => {
         }
         else {
             memberships = await teams.getUsersMemberships(req.userId)
-            // If the user doesn't have any teams, create one
-            if (memberships.length == 0) {
-                let user = await users.getUser(req.userId)
-                let results = await teams.createTeam(user)
-                let team = results[0]
-                let membership = results[1]
-                memberships = [membership]
-            }
         }
         res.json({
             success: true,
@@ -45,8 +37,6 @@ router.get('/', async (req, res) => {
         console.log(err)
         res.status(500).send('Internal server error')
     }
-
-
 })
 
 

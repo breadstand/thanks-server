@@ -109,7 +109,14 @@ const userSchema = new Schema({
     name: String,
     password: String,
     city: String,
-    emails: [{email: String, verified: Boolean, code: String, failed: Number}],
+    contacts: [{
+        contact: String, 
+        contactType: String,
+        verified: Boolean, 
+        verifyCode: String, 
+        verifyCodeExpiration: Number,
+        failed: Number
+    }],
     active: {
         type: Boolean,
         default: true
@@ -145,18 +152,10 @@ const userSchema = new Schema({
             }, 'Nothing'
         ]
     },
-    phones: [{
-        number: String, 
-        verified: Boolean, 
-        code: String,
-        failed: Number
-    }],
     timeZone: {
         type: String,
         default: 'America/New_York'
     },
-    verifyCode: String,
-    verifyCodeExpiration: Number,
     backgroundImage: {
         type: Schema.Types.ObjectId,
         ref: 'image'

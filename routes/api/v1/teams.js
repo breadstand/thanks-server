@@ -2,56 +2,34 @@ const express = require('express')
 const router = express.Router()
 const User = require('../../../models/user').User
 const {safeCopy} = require('../../../utils/utils')
+const users = require('../../../services/users')
 
 
 router.get('/',(req,res) => {
-    let query = {
-        user: req.userId, 
-        draft: false,
-        deleted: {$ne: true}
-    }
-    let limit = 10;
-    if (req.query.limit) {
-        limit = Number(req.query.limit)
-    }
-    if (req.query.category) {
-        query.category = req.query.category
-    }
-    if (req.query.draft) {
-        query.draft = req.query.draft
-    }
-    Post.find(query)
-        .sort({lastUpdate: 'desc',created: 'desc'})
-        .limit(limit)
-        .then( posts => {
-        res.json({ success: true,
-                data: posts
-        })
-
-    }).catch(err => {
-        res.status(500).send('Internal server error')
-    })
+    console.log('Not implemented yet')
+    res.status(500).send('Internal server error')
 })
 
 
 
-router.post('/',(req,res) => {
+router.post('/',async (req,res) => {
+    try {
+        let user = await users.getUser(req.userId)
+        let results = await teams.createTeam(user)
+        let team = results[0]
 
-    let postData = req.body
-    delete req.body._id
-    let post = new Post(postData)
-    post.user = req.userId;
-    post.save()
-    .then(savedPost => {
-        res.status(200).send({
+        res.json({
             success: true,
-            data: savedPost
+            data: team
         })
-    }).catch( err =>{
+    } catch (err) {
         console.log(err)
         res.status(500).send('Internal server error')
-    })
+    }
 })
+
+
+
 
 router.get('/:id',(req,res) => {
     Post.findById(req.params.id)

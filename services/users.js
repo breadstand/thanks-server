@@ -13,6 +13,7 @@ const Change = require('../models/change').Change;
 const smtp = require('../services/smtp');
 const sms = require('../services/sms');
 const cryptoRandomString = require('crypto-random-string');
+const {phone} = require('phone');
 
 
 async function createUser(name, email) {
@@ -495,12 +496,21 @@ async function sendCodeToVerifyEmail(email) {
 		user = await createUser(email,email);
 	}
 
-	user.verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
-	user.verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
+	let verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
+	let verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
+
+	for(i = 0; i < user.emails.lengths;i++) {
+		if (user.emails[i].email == email) {
+			user.emails[i].verifyCode = verifyCode
+			user.emails[i].verifyCodeExpiration = verifyCodeExpiration
+			break;
+		}
+	}
+
 	await user.save();
 	await notifyUser(user._id,
 		'Verification Code',
-		'Here is your breadstand.com verification code: '+user.verifyCode + 
+		'Here is your breadstand.com verification code: '+ verifyCode + 
 		'. If you did not request a code, contact Breadstand.');
 
 	return user;
@@ -512,9 +522,15 @@ async function sendCodeToVerifyPhone(phone) {
 		user = await createUserByPhone(phone,phone);
 	}
 
-	user.verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
-	user.verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
-	await user.save();
+	let verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
+	let verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
+	
+	for (let i = 0; i < user.phones.length;i++) {
+		user.phones[i].verifyCode = verifyCode
+		user.phones[i].verifyCodeExpiration = verifyCode
+	}
+
+
 	await notifyUser(user._id,
 		'Verification Code',
 		'Here is your breadstand.com verification code: '+user.verifyCode + 
@@ -526,14 +542,23 @@ async function sendCodeToVerifyPhone(phone) {
 
 
 
-async function verifyCode(email,code) {
+async function verifyCode(email,phone,code) {
 	let result = {
 		success: false,
 		error: "The code is invalid.",
 		data: null
 	};
 
-	let user = await findUserByEmail(email);
+
+	let user = null;
+	if (email) {
+		user = await findUserByEmail(email);
+	}
+	if (phone) {
+		user = await findUserByPhone(phone);
+	}
+
+
 	let currentTime = new Date().getTime();
 	//console.log(user,code,email,currentTime)
 	if (user && 
@@ -556,6 +581,7 @@ async function verifyCode(email,code) {
 
 	return result;
 };
+
 
 
 async function getAvailability(userId) {

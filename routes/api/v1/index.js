@@ -82,9 +82,28 @@ router.post('/send-email-code',async (req,res) => {
 })
 
 
+router.post('/send-phone-code',async (req,res) => {
+    try{
+        let user = await users.sendCodeToVerifyPhone(req.body.phone)
+        console.log(user)
+        res.json({
+            success: true
+        })
+
+    } catch(err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+
+})
+
+
 router.post('/verify-code',async (req,res) => {
     try{
-        let result = await users.verifyCode(req.body.email,req.body.code)
+        let email = req.body.email;
+        let phone = req.body.phone;
+        let code = req.body.code;
+        let result = await users.verifyCode(email,phone,code)
         if (result.data) {
             let user = result.data._id // user is in result.data
             let payload = {subject: user._id }
