@@ -1,14 +1,12 @@
-const { LexModelBuildingService } = require('aws-sdk')
 const express = require('express')
-const { UserInstance } = require('twilio/lib/rest/conversations/v1/user')
 const router = express.Router()
-const User = require('../../../models/user').User
+const UserObject = require('../../../dist/models/user').UserObject
 const {safeCopy} = require('../../../utils/utils')
-const users = require('../../../services/users')
+const users = require('../../../dist/services/users')
 
 router.get('/:id',(req,res) => {
 
-    User.findById(req.userId)
+    UserObject.findById(req.userId)
         .then( user => {
         user.password = undefined;
         res.json(user)
@@ -31,7 +29,7 @@ router.put('/:id',(req,res) => {
     let options = {
         returnDocument: 'after',
     }
-    User.findByIdAndUpdate(req.userId,userUpdate,options)
+    UserObject.findByIdAndUpdate(req.userId,userUpdate,options)
         .then( updatedUser => {
             updatedUser.password = undefined;
             res.status(200).json(updatedUser)

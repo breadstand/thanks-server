@@ -26,8 +26,16 @@ function generateThumbnail(imageBuffer,width,height) {
 }
 
 function convertToJpeg(imageBuffer) {
+    var resize_params = { 
+        width: 1500,
+        options: {
+            withoutEnlargement: true
+        } 
+    };
+
     return new Promise( (resolve,reject) => {
         sharp(imageBuffer)
+        .resize(resize_params)
         .rotate()
         .jpeg()
         .toBuffer()

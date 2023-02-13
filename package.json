@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node ./src"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,13 @@
     "phone": "^3.1.32",
     "sharp": "^0.31.3",
     "stripe": "^11.6.0",
+    "ts-node": "^10.9.1",
     "twilio": "^3.84.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "^18.13.0",
+    "typescript": "^4.9.5"
   }
 }

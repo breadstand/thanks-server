@@ -1,7 +1,5 @@
 const express = require('express')
 const router = express.Router()
-const Post = require('../../../models/post').Post
-const User = require('../../../models/user').User
 const { safeCopy } = require('../../../utils/utils')
 const thanks = require('../../../services/thanks')
 const teams = require('../../../services/teams')

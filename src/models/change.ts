@@ -1,7 +1,27 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Model, model, ObjectId, Schema } from 'mongoose';
 
-const changeSchema = new Schema({
+export interface Change {
+    created: Date,
+    user: ObjectId,    
+    item: string,
+    id: string,
+    reason: string,
+    changes: [
+        {
+        property: string,
+        fromValue: string,
+        toValue: string
+        }
+    ]
+}
+
+interface ChangeMethods extends Model<Change> {
+    record(object:any,property:any,toValue:any):void;
+}
+
+type ChangeModel = Model<Change, {}, ChangeMethods>;
+
+const changeSchema = new Schema<Change,ChangeModel,ChangeMethods>({
     created: {
         type: Date,
         default: Date.now
@@ -30,7 +50,8 @@ const changeSchema = new Schema({
 });
 
 
-changeSchema.methods.record = function(object,property,toValue) {
+
+changeSchema.methods.record = function(object:any,property:any,toValue:any) {
     let fromValue = object[property];
     let fromValueString = String(fromValue);
     let toValueString = toValue? toValue.toString():"";
@@ -45,7 +66,7 @@ changeSchema.methods.record = function(object,property,toValue) {
     }
 }
 
-changeSchema.methods.recordPush = function(object,property,newValue) {
+changeSchema.methods.recordPush = function(object:any,property:any,newValue:any) {
     let fromValue = object[property];
     let fromValueString = fromValue? fromValue.toString():"";
     object[property].push(newValue);
@@ -59,15 +80,10 @@ changeSchema.methods.recordPush = function(object,property,newValue) {
 }
 
 
-
 changeSchema.statics.getAllChanges = function search (item, id) {
     return this.find({item: item,id: id}).populate('user').sort({_id: -1});
 };
 
 changeSchema.index({item: 1,id: 1});
-const Change = mongoose.model('change',changeSchema);
+export const ChangeObject = model<Change,ChangeModel>('change',changeSchema);
 
-
-module.exports = {
-    Change
-}

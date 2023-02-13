@@ -1,5 +1,4 @@
 const {phone} = require('phone');
-const hit  = require('./../services/hit');
 const smtp = require('../services/smtp');
 const sms = require('../services/sms');
 

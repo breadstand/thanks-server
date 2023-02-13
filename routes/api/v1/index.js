@@ -3,8 +3,11 @@ const router = express.Router()
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto')
 const safeCopy = require('../../../utils/utils').safeCopy
-const User = require('../../../models/user').User
-const users = require('../../../services/users')
+//const User = require('../../../models/user').User;
+//const users = require('../../../services/users');
+const UserObject = require('../../../dist/models/user').UserObject;
+const users = require('../../../dist/services/users');
+
 
 
 router.get('/',(req,res) => {
@@ -14,7 +17,7 @@ router.get('/',(req,res) => {
 router.post('/register', (req,res) =>{
     // Don't allow creating if the user already exists
     let userData = req.body;
-    let user = new User(userData)
+    let user = new UserObject(userData)
     
     user.password = crypto.createHash('sha256')
         .update(user.password)
@@ -43,7 +46,7 @@ router.post('/login', (req,res) => {
     .digest('hex');
 
 
-    User.findOne({email: userData.email}, (error, user) => {
+    UserObject.findOne({email: userData.email}, (error, user) => {
         if (error) {
             console.log(error)
         } else {

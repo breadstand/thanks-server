@@ -2,11 +2,11 @@ const Team = require('../models/team').Team;
 const Membership = require('../models/membership').Membership;
 const TeamBounty = require('../models/team').TeamBounty;
 const TeamPrize = require('../models/team').TeamPrize;
-const loadImageFromS3 = require('../models/image').loadImageFromS3;
+const loadImageFromS3 = require('../dist/models/image').loadImageFromS3;
 const smtp = require('../services/smtp');
 const sms = require('../services/sms');
 const utils = require('../services/utils');
-const users = require('../services/users');
+const users = require('../dist/services/users');
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY,{
     apiVersion: process.env.STRIPE_API_VERSION
 });

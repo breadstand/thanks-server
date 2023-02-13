@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const User = require('../../../models/user').User
 const {safeCopy} = require('../../../utils/utils')
-const users = require('../../../services/users')
+const users = require('../../../dist/services/users')
 
 
 router.get('/',(req,res) => {

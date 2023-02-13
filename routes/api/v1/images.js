@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const sharp = require('sharp')
-const Image = require('../../../models/image').Image
+const StoredImageObject = require('../../../dist/models/image').StoredImageObject
 const {saveImageToAWS, loadImageFromAWS} = require('../../../services/images')
 
 const upload = multer()
@@ -31,7 +31,7 @@ router.post('/',
 
       // Creat the image. Note: image will be converted to JPG in the
       // saveImageToAWS step.
-      let image = new Image({
+      let image = new StoredImageObject({
         user: req.userId,
         mimetype: 'image/jpeg',
         width: metadata.width,
@@ -56,7 +56,7 @@ router.get('/:image', async (req, res) => {
     // image can be an image._id or image._id + '.jpg'
     let imageId = req.params.image.split('.')[0]
 
-    let image = await Image.findOne({
+    let image = await StoredImageObject.findOne({
         _id: imageId,
         user: req.userId
     })

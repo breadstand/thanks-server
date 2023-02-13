@@ -2,8 +2,7 @@ const ThanksPost = require('../models/thankspost').ThanksPost;
 const ThanksSet = require('../models/thankspost').ThanksSet;
 const teams = require('../services/teams');
 const keyword_extractor = require("keyword-extractor");
-const smtp = require('../services/smtp');
-const sms = require('../services/sms');
+
 
 
 function sanitizeFor(postfor,size=280) {

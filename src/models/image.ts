@@ -1,9 +1,8 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema, model, connect } from 'mongoose';
+import { Types } from 'mongoose';
 
 /* 
 This format mimics the form returned by the multer package.
-
 {
   fieldname: 'image',
   originalname: 'Screen Shot 2022-12-30 at 4.59.20 PM.png',
@@ -13,8 +12,21 @@ This format mimics the form returned by the multer package.
   size: 217961
 }
 */
+export interface StoredImage {
+    created: Date,
+    user: Types.ObjectId,
+    key: string, // The name to use for storing in AWS 
+    mimetype: string,
+    originalname: string,
+    thumbnail: {
+        mimetype: String,
+    },
+    width: number,
+    height: number
+}
 
-const imageSchema = new Schema({
+
+const imageSchema = new Schema<StoredImage>({
   created: {
     type: Date,
     default: Date.now
@@ -23,7 +35,6 @@ const imageSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'user'
   },
-
   key: String, // The name to use for storing in AWS 
   mimetype: String,
   originalname: String,
@@ -34,8 +45,6 @@ const imageSchema = new Schema({
   height: Number
 });
 
-const Image = mongoose.model('image', imageSchema)
+export const StoredImageObject = model<StoredImage>('image', imageSchema)
 imageSchema.index({ created: 1, user: 1 })
-
-module.exports = { Image };
 

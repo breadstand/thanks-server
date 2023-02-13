@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-var imageSchema = require('../models/image').imageSchema;
+var imageSchema = require('../dist/models/image').imageSchema;
 
 const Schema = mongoose.Schema
 const postSchema = new Schema({
