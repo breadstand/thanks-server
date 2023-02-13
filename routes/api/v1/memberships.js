@@ -1,11 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const Membership = require('../../../models/membership').Membership
-const User = require('../../../models/user').User
 const { safeCopy } = require('../../../utils/utils')
 const teams = require('../../../services/teams')
-const users = require('../../../services/users')
-const { UserInstance } = require('twilio/lib/rest/conversations/v1/user')
+const users = require('../../../dist/services/users')
 
 router.get('/', async (req, res) => {
 
