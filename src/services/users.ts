@@ -18,7 +18,7 @@ const sms = require('../../services/sms');
 const cryptoRandomString = require('crypto-random-string');
 const {phone} = require('phone');
 
-
+   
 async function createUser(contact:string,contactType:string,name:string|null=null) {
     let sanitizedContact = null
     if (contactType == 'email') {

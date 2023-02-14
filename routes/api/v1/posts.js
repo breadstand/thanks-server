@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const Post = require('../../../models/post').Post
+const PostObject = require('../../../dist/models/post').PostObject
 const { safeCopy } = require('../../../utils/utils')
 
 router.get('/', async (req, res) => {
@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
         if (req.query.count_posts) {
             delete query.lastUpdate
             // For count requests, we'll skip the find
-            let count = await Post.countDocuments(query)
+            let count = await PostObject.countDocuments(query)
             res.json({
                 object: "number",
                 success: true,
@@ -103,7 +103,7 @@ router.post('/', (req, res) => {
 
     let postData = req.body
     delete req.body._id
-    let post = new Post(postData)
+    let post = new PostObject(postData)
     post.user = req.userId;
     post.save()
         .then(savedPost => {
@@ -118,7 +118,7 @@ router.post('/', (req, res) => {
 })
 
 router.get('/:id', (req, res) => {
-    Post.findById(req.params.id)
+    PostObject.findById(req.params.id)
         .then(post => {
             res.json({
                 success: true,
@@ -140,7 +140,7 @@ router.put('/:id', (req, res) => {
     delete postUpdate._id
     delete postUpdate.user
 
-    Post.findOneAndUpdate(
+    PostObject.findOneAndUpdate(
         { _id: req.params.id, user: req.userId }, postUpdate, options)
         .then(updatedPost => {
             res.status(200).json({

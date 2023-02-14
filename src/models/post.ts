@@ -1,8 +1,39 @@
+import { ObjectId, Schema } from "mongoose";
+
 const mongoose = require('mongoose')
 var imageSchema = require('../dist/models/image').imageSchema;
 
-const Schema = mongoose.Schema
-const postSchema = new Schema({
+export interface Post {
+    created: Date,
+    lastUpdate: Date,
+    user: ObjectId,
+    category: string,
+    title: string, 
+    mood: string, 
+    scale: number, 
+    summary: string, 
+    body: string,
+    image: ObjectId,
+    draft: boolean,
+    deleted: boolean,
+    identity: string,
+    intention: string,
+    instructions: string,
+    choices: string[],
+    choiceSelected: number,
+    unexpected: string,
+    current_situation: string, 
+    negative_beliefs: string[],  
+    preferred_beliefs: string[],
+    preferred_feelings: string, 
+    preferred_thoughts: string,
+    actionItems: [{
+        action: string,
+        complete: boolean
+    }],
+}
+
+const postSchema = new Schema<Post>({
     created: {
         type: Date,
         default: Date.now
@@ -39,9 +70,6 @@ const postSchema = new Schema({
     choices: [String],
     choiceSelected: Number,
     unexpected: String,
-    recast_situation: String, // Deprecated
-    evidence: String, // Deprecated
-    recast_imagine: [String], // Deprecated
     current_situation: String, // New
     negative_beliefs: [String],  
     preferred_beliefs: [String],
@@ -52,8 +80,8 @@ const postSchema = new Schema({
         complete: Boolean
     }],
 })
-const Post = mongoose.model('post',postSchema)
+export const PostObject = mongoose.model('post',postSchema)
 postSchema.index({  user: 1,lastUpdate: 1,category: 1})
 
 
-module.exports = { Post }
+   
