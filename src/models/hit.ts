@@ -1,8 +1,13 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+import { model, ObjectId, Schema } from "mongoose";
 //var ValidationError = require('../models/error').ValidationError;
 
-const hitSchema = new Schema({
+export interface Hit {
+    created: Date,
+    url: string,
+    user: ObjectId
+}
+
+const hitSchema = new Schema<Hit>({
     created: {
         type: Date,
         default: Date.now
@@ -11,9 +16,7 @@ const hitSchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'user' }
 });
 
-const Hit = mongoose.model('hit',hitSchema);
+export const Hit = model('hit',hitSchema);
 hitSchema.index({ created: 1}); 
 hitSchema.index({ created: 1,url: 1}); 
-
-module.exports = { Hit };
 

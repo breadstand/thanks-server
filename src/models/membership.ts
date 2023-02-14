@@ -1,7 +1,43 @@
+import { ObjectId, Schema } from "mongoose";
+import { Team } from "./team";
+import { User } from "./user";
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
-const membershipSchema = new Schema({
+export interface Membership {
+    _id: ObjectId
+    team: ObjectId | Team,
+    user: ObjectId | User | null,
+    name: string,
+    contacts: [{
+        contact: string,
+        contactType: string
+    }],
+    created: Date,
+    lastUpdate: Date,
+    details: string,
+    sent: number,
+    received: number,
+    ideas: number,
+    active: boolean,
+    owner: boolean,
+    image: ObjectId,
+    verifyCode: string,
+    wentTo: string,
+    workedAt: string,
+    livesIn: string,
+    from: string
+}
+
+
+export interface UsersMembership extends Membership {
+    team: Team,
+}
+
+export interface TeamMember extends Membership {
+    user: User
+}
+
+const membershipSchema = new Schema<Membership>({
     team: { 
         type: Schema.Types.ObjectId, 
         ref: 'team'
@@ -11,8 +47,10 @@ const membershipSchema = new Schema({
         ref: 'user'
     },
     name: String,
-    phone: String,
-    email: String,
+    contacts: [{
+        contact: String,
+        contactType: String
+    }],
     created: {
         type: Date,
         default: Date.now
@@ -54,13 +92,9 @@ const membershipSchema = new Schema({
 });
 
 
-const Membership = mongoose.model('membership',membershipSchema);
+export const MembershipObject = mongoose.model('membership',membershipSchema);
 membershipSchema.index({ "team": 1});
 membershipSchema.index({ "user": 1});
 membershipSchema.index({ "phone": 1});
 membershipSchema.index({ "email": 1});
-
-module.exports = { 
-    Membership
-};
 

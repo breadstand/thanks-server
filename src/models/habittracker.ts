@@ -1,13 +1,17 @@
-/*
-export class HabitTracker {
-    title: string = 'Habit Tracker'
-    dates:string[] = []
-}
-*/
+import { ObjectId, Schema } from "mongoose"
+
 const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema
-const habitTrackerSchema = new Schema({
+export interface HabitTracker {
+    created: Date,
+    updated: Date,
+    user: ObjectId,
+    title: string,
+    dates: [string]
+}
+
+
+const habitTrackerSchema = new Schema<HabitTracker>({
     created: {
         type: Date,
         default: Date.now
@@ -23,8 +27,6 @@ const habitTrackerSchema = new Schema({
     title: String,
     dates: [String]
 })
-const HabitTracker = mongoose.model('habit_tracker',habitTrackerSchema)
+export const HabitTrackerObject = mongoose.model('habit_tracker',habitTrackerSchema)
 habitTrackerSchema.index({user: 1})
 
-
-module.exports = { HabitTracker }

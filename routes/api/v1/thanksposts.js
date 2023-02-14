@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { safeCopy } = require('../../../utils/utils')
 const thanks = require('../../../services/thanks')
-const teams = require('../../../services/teams')
+const teams = require('../../../dist/services/teams')
 
 
 router.get('/', async (req, res) => {

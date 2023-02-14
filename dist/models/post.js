@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostObject = void 0;
 const mongoose_1 = require("mongoose");
 const mongoose = require('mongoose');
-var imageSchema = require('../dist/models/image').imageSchema;
 const postSchema = new mongoose_1.Schema({
     created: {
         type: Date,
@@ -20,9 +19,6 @@ const postSchema = new mongoose_1.Schema({
     category: String,
     title: String,
     mood: String,
-    scale: Number,
-    summary: String,
-    body: String,
     image: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'image'
@@ -41,15 +37,15 @@ const postSchema = new mongoose_1.Schema({
     choices: [String],
     choiceSelected: Number,
     unexpected: String,
-    current_situation: String,
-    negative_beliefs: [String],
-    preferred_beliefs: [String],
-    preferred_feelings: String,
-    preferred_thoughts: String,
+    currentSituation: String,
+    negativeBeliefs: [String],
+    preferredBeliefs: [String],
+    preferredFeelings: String,
+    preferredThoughts: String,
     actionItems: [{
             action: String,
             complete: Boolean
         }],
 });
-exports.PostObject = mongoose.model('post', postSchema);
+exports.PostObject = (0, mongoose_1.model)('post', postSchema);
 postSchema.index({ user: 1, lastUpdate: 1, category: 1 });

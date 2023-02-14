@@ -1,7 +1,6 @@
-import { ObjectId, Schema } from "mongoose";
+import { model, ObjectId, Schema } from "mongoose";
 
 const mongoose = require('mongoose')
-var imageSchema = require('../dist/models/image').imageSchema;
 
 export interface Post {
     created: Date,
@@ -10,9 +9,6 @@ export interface Post {
     category: string,
     title: string, 
     mood: string, 
-    scale: number, 
-    summary: string, 
-    body: string,
     image: ObjectId,
     draft: boolean,
     deleted: boolean,
@@ -22,11 +18,11 @@ export interface Post {
     choices: string[],
     choiceSelected: number,
     unexpected: string,
-    current_situation: string, 
-    negative_beliefs: string[],  
-    preferred_beliefs: string[],
-    preferred_feelings: string, 
-    preferred_thoughts: string,
+    currentSituation: string, 
+    negativeBeliefs: string[],  
+    preferredBeliefs: string[],
+    preferredFeelings: string, 
+    preferredThoughts: string,
     actionItems: [{
         action: string,
         complete: boolean
@@ -49,9 +45,6 @@ const postSchema = new Schema<Post>({
     category: String,
     title: String, // Title (actually the choice from previous post)
     mood: String, // Mood as a String
-    scale: Number, // Feeling on a scale of 1-10
-    summary: String, // Summary of what happened after
-    body: String,
     image: {
         type: Schema.Types.ObjectId,
         ref: 'image'
@@ -70,17 +63,17 @@ const postSchema = new Schema<Post>({
     choices: [String],
     choiceSelected: Number,
     unexpected: String,
-    current_situation: String, // New
-    negative_beliefs: [String],  
-    preferred_beliefs: [String],
-    preferred_feelings: String, 
-    preferred_thoughts: String,
+    currentSituation: String, // New
+    negativeBeliefs: [String],  
+    preferredBeliefs: [String],
+    preferredFeelings: String, 
+    preferredThoughts: String,
     actionItems: [{
         action: String,
         complete: Boolean
     }],
 })
-export const PostObject = mongoose.model('post',postSchema)
+export const PostObject = model('post',postSchema)
 postSchema.index({  user: 1,lastUpdate: 1,category: 1})
 
 

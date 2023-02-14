@@ -1,10 +1,10 @@
 const express = require('express')
 const router = express.Router()
-const { HabitTracker } = require('../../../models/habittracker')
+const { HabitTrackerObject } = require('../../../dist/models/habittracker')
 
 
 router.get('/', (req, res) => {
-    HabitTracker.find({ user: req.userId })
+    HabitTrackerObject.find({ user: req.userId })
         .sort({ title: 1 })
         .then(trackers => {
             res.json({
@@ -24,7 +24,7 @@ router.post('/', (req, res) => {
         req.body[i].user = req.userId
     }
 
-    HabitTracker.insertMany(req.body)
+    HabitTrackerObject.insertMany(req.body)
         .then((trackers) => {
             res.json({
                 success: true,
@@ -45,7 +45,7 @@ router.put('/',(req,res) => {
         let tracker = req.body[i]
         tracker.user = req.userId
         //console.log(tracker)
-        let promise = HabitTracker.findOneAndUpdate(
+        let promise = HabitTrackerObject.findOneAndUpdate(
                 { _id: tracker._id,user: req.userId},tracker,{new: true,upsert: true}).exec()
         promises.push(promise)
     }

@@ -1,9 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const Membership = require('../../../models/membership').Membership
-const { safeCopy } = require('../../../utils/utils')
-const teams = require('../../../services/teams')
-const users = require('../../../dist/services/users')
+const teams = require('../../../dist/services/teams')
 
 router.get('/', async (req, res) => {
 

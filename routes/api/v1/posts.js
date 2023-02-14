@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
                 data: count
             })
         } else {
-            let posts = await Post.find(query)
+            let posts = await PostObject.find(query)
                 .sort(sort)
                 .limit(limit + 1)
 

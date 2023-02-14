@@ -1,6 +1,6 @@
 const ThanksPost = require('../models/thankspost').ThanksPost;
 const ThanksSet = require('../models/thankspost').ThanksSet;
-const teams = require('../services/teams');
+const teams = require('../dist/services/teams');
 const keyword_extractor = require("keyword-extractor");
 
 
