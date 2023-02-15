@@ -4,11 +4,11 @@ import { ObjectId } from "mongoose";
 import { Membership, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
 import { Team, TeamObject, TeamBountyObject, TeamPrizeObject } from "../models/team";
 import { User } from "../models/user";
+import { smsSend } from "./sms";
+import { smtpSend } from "./smtp";
+import { findUserByContact } from "./users";
+import { sanitizeEmail, sanitizeName, sanitizePhone } from "./utils";
 
-const smtp = require('../../services/smtp');
-const sms = require('../../services/sms');
-const utils = require('../../services/utils');
-const users = require('../../dist/services/users');
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY,{
     apiVersion: process.env.STRIPE_API_VERSION
 });
@@ -66,11 +66,11 @@ We have a couple of situations:
 
 
 
-async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string, contact:string) {
+export async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string, contact:string) {
 
-	var n = utils.sanitizeName(name);
-	var e = utils.sanitizeEmail(contact);
-	var p = utils.sanitizePhone(contact);
+	var n = sanitizeName(name);
+	var e = sanitizeEmail(contact);
+	var p = sanitizePhone(contact);
 
 	if (!n) {
 		return null;
@@ -114,7 +114,7 @@ async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string
 	// If the member does not have a user associated
 	// see if we can associate them
 	if (!teamMember.user && e) {
-		var user = await users.findUserByEmail(e);
+		var user = await findUserByContact(e,'email');
 		if (user) {
 			teamMember.user = user._id;
 		}
@@ -176,7 +176,7 @@ async function addMember(teamid:ObjectId, user:User) {
 }
 
 
-function getUsersMemberships(userid:ObjectId):UsersMembership[] {
+export function getUsersMemberships(userid:ObjectId):UsersMembership[] {
 	return MembershipObject.find({
 			user: userid,
 			active: true
@@ -189,7 +189,7 @@ function getUsersMemberships(userid:ObjectId):UsersMembership[] {
 		});
 }
 
-async function createTeamName(user:User) {
+export async function createTeamName(user:User) {
 	var usersteams = await getUsersMemberships(user._id);
 
 	if (usersteams.length >= maxteams) {
@@ -229,7 +229,7 @@ Returns: result array
 results[0] Membership object
 results[1]
 */
-async function createTeam(user:User,options:any={}):Promise<[Team,Membership]> {
+export async function createTeam(user:User,options:any={}):Promise<[Team,Membership]> {
 
 	if (!options.teamName) {
 		options.teamName = await createTeamName(user);
@@ -285,7 +285,7 @@ function getMember(memberid:ObjectId):TeamMember {
 	}).populate('user');
 }
 
-function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership {
+export function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership {
 	return MembershipObject.findOne({
 		team: teamid,
 		user: userid,
@@ -294,7 +294,7 @@ function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership {
 }
 
 
-function getMemberships(teamid:ObjectId):Promise<Membership[]> {
+export function getMemberships(teamid:ObjectId):Promise<Membership[]> {
 	return MembershipObject.find({
 			team: teamid,
 			active: true
@@ -307,7 +307,7 @@ function getMemberships(teamid:ObjectId):Promise<Membership[]> {
 
 
 function getMemberByEmail(teamid:ObjectId, email:string):Membership {
-	var standardized_email = utils.sanitizeEmail(email);
+	var standardized_email = sanitizeEmail(email);
 	return MembershipObject.findOne({
 		team: teamid,
 		email: standardized_email,
@@ -316,7 +316,7 @@ function getMemberByEmail(teamid:ObjectId, email:string):Membership {
 }
 
 function findMemberByContact(teamid:ObjectId, contact:string):Membership|null {
-	var email = utils.sanitizeEmail(contact);
+	var email = sanitizeEmail(contact);
 	//var phone = teams.standardizePhone(contact);
 	if (email) {
 		return MembershipObject.findOne({
@@ -386,10 +386,10 @@ async function notifyMember(memberId:ObjectId, subject:string, body:string) {
 	for (let i = 0; i < teamMember.contacts.length; i++) {
 		let contact = teamMember.contacts[i]
 		if (contact.contactType == 'phone') {
-			await sms.send(contact.contact, body);
+			await smsSend(contact.contact, body);
 		}
 		if (contact.contactType == 'email') {
-			await smtp.send(contact.contact, subject, body);
+			await smtpSend(contact.contact, subject, body);
 		}
 	}
 }
@@ -433,7 +433,7 @@ function sendInvitation(teamMember:ObjectId, owner:Membership) {
 	return notifyMember(teamMember, subject, body);
 }
 
-async function notifyTeam(teamid:ObjectId, subject:string, body:string) {
+export async function notifyTeam(teamid:ObjectId, subject:string, body:string) {
 	await getMemberships(teamid)
 		.then( (members:Membership[]) => {
 			members.forEach(async member => {
@@ -557,7 +557,7 @@ async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
 function createBounty(teamid:ObjectId, name:string, amount:number) {
 	var bounty = new TeamBountyObject({
 		team: teamid,
-		name: utils.sanitizeName(name),
+		name: sanitizeName(name),
 		amount: amount
 	});
 	return bounty.save();
@@ -574,7 +574,7 @@ function getBounties(teamid:ObjectId,active:boolean|null=true) {
 		});
 }
 
-function getBounty(bountyid:ObjectId) {
+export function getBounty(bountyid:ObjectId) {
 	return TeamBountyObject.findById(bountyid);
 }
 
@@ -601,7 +601,7 @@ function deactivateBounty(bountyid:ObjectId) {
 
 async function updateBounty(bountyid:ObjectId,update:any) {
 	if (update.name) {
-		update.name = utils.sanitizeName(update.name);
+		update.name = sanitizeName(update.name);
 	}
 	if (update.active !== undefined) {
 		throw "Active status can only be updated through deactivateBounty()";
@@ -613,7 +613,7 @@ async function updateBounty(bountyid:ObjectId,update:any) {
 	return bounty;
 }
 
-function incrementSentCount(memberid:ObjectId,count=1) {
+export function incrementSentCount(memberid:ObjectId,count=1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			sent: count
@@ -623,7 +623,7 @@ function incrementSentCount(memberid:ObjectId,count=1) {
 	});
 }
 
-function incrementReceivedCount(memberid:ObjectId,count=1) {
+export function incrementReceivedCount(memberid:ObjectId,count=1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			received: count
@@ -633,7 +633,7 @@ function incrementReceivedCount(memberid:ObjectId,count=1) {
 	});
 }
 
-function incrementIdeaCount(memberid:ObjectId,count=1) {
+export function incrementIdeaCount(memberid:ObjectId,count=1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			ideas: count
@@ -660,9 +660,9 @@ async function resetMember(member:Membership) {
 	await MembershipObject.findById(member._id,{user: null})
 }
 
-function updateMember(memberid:ObjectId, update:Membership) {
+export function updateMember(memberid:ObjectId, update:Membership) {
 	//Update to allow removal of email or phone
-	let name = utils.sanitizeName(update.name);
+	let name = sanitizeName(update.name);
 	if (name)  {
 		update.name = name;
 	}
@@ -670,10 +670,13 @@ function updateMember(memberid:ObjectId, update:Membership) {
 	update.details = update.details.slice(0,80).trim();
 	update.contacts.forEach( contact => {
 		if (contact.contactType == 'email') {
-			contact.contact = utils.sanitizeEmail(contact.contact);
+			let sanitized = sanitizeEmail(contact.contact);
+			if (sanitized) {
+				contact.contact = sanitized
+			}
 		}
 		if (contact.contactType == 'phone') {
-			contact.contact = utils.sanitizePhone(contact.contact);
+			contact.contact = sanitizePhone(contact.contact);
 		}
 	})
 
@@ -852,60 +855,8 @@ async function getTeams(active:boolean|null) {
 }
 
 
-async function getMemberById(memberId:ObjectId) {
+export async function getMemberById(memberId:ObjectId) {
 	return MembershipObject.findById(memberId);
 }
 
-
-
-
-module.exports = {
-	activateBounty,
-	addDefaultOwner,
-	addMember,
-	addMemberByContact,
-	adjustSentCount,
-	availablePrizes,
-	awardPrizeTo,
-	createBounty,
-	createPrize,
-	createTeam,
-	createTeamName,
-	deactivateBounty,
-	deactivateMember,
-	deactivePrize,
-	deleteOrphans,
-	deleteTeam,
-	findMemberByContact,
-	forEach,
-	getBounties,
-	getBounty,
-	getMember,
-	getMemberById,
-	getMemberByEmail,
-	getMemberByUserId,
-	getMemberships,
-	getNewMembers,
-	getOwners,
-	getDraftPrize,
-	getPrize,
-	getTeam,
-	getTeams,
-	getUsersMemberships,
-	importMembers,
-	incrementIdeaCount,
-	incrementReceivedCount,
-	incrementSentCount,
-	nextAvailablePrize,
-	notifyMember,
-	notifyOwners,
-	notifyTeam,
-	resetMember,
-	setMemberPrivileges,
-	updateBounty,
-	updateMember,
-	updateMemberCount,
-	updateTeam,
-	updateUsersMemberships
-}
 

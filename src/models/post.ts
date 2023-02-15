@@ -8,6 +8,7 @@ export interface Post {
     user: ObjectId,
     category: string,
     title: string, 
+    summary: string,
     mood: string, 
     image: ObjectId,
     draft: boolean,
@@ -45,6 +46,7 @@ const postSchema = new Schema<Post>({
     category: String,
     title: String, // Title (actually the choice from previous post)
     mood: String, // Mood as a String
+    summary: String,
     image: {
         type: Schema.Types.ObjectId,
         ref: 'image'

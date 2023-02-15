@@ -9,12 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
-const smtp = require('../../services/smtp');
-const sms = require('../../services/sms');
-const utils = require('../../services/utils');
-const users = require('../../dist/services/users');
+const sms_1 = require("./sms");
+const smtp_1 = require("./smtp");
+const users_1 = require("./users");
+const utils_1 = require("./utils");
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
     apiVersion: process.env.STRIPE_API_VERSION
 });
@@ -66,9 +67,9 @@ We have a couple of situations:
 */
 function addMemberByContact(teamid, owner, name, contact) {
     return __awaiter(this, void 0, void 0, function* () {
-        var n = utils.sanitizeName(name);
-        var e = utils.sanitizeEmail(contact);
-        var p = utils.sanitizePhone(contact);
+        var n = (0, utils_1.sanitizeName)(name);
+        var e = (0, utils_1.sanitizeEmail)(contact);
+        var p = (0, utils_1.sanitizePhone)(contact);
         if (!n) {
             return null;
         }
@@ -108,7 +109,7 @@ function addMemberByContact(teamid, owner, name, contact) {
         // If the member does not have a user associated
         // see if we can associate them
         if (!teamMember.user && e) {
-            var user = yield users.findUserByEmail(e);
+            var user = yield (0, users_1.findUserByContact)(e, 'email');
             if (user) {
                 teamMember.user = user._id;
             }
@@ -119,6 +120,7 @@ function addMemberByContact(teamid, owner, name, contact) {
         return teamMember;
     });
 }
+exports.addMemberByContact = addMemberByContact;
 // This is when we already have access to the user object, and not just the email
 function addMember(teamid, user) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -173,6 +175,7 @@ function getUsersMemberships(userid) {
         "team.name": 1
     });
 }
+exports.getUsersMemberships = getUsersMemberships;
 function createTeamName(user) {
     return __awaiter(this, void 0, void 0, function* () {
         var usersteams = yield getUsersMemberships(user._id);
@@ -195,6 +198,7 @@ function createTeamName(user) {
         return null;
     });
 }
+exports.createTeamName = createTeamName;
 /*
 createTeam(user);
 Creates a new team. The initial name of the team is "Untitled Team".
@@ -235,6 +239,7 @@ function createTeam(user, options = {}) {
         return Promise.all([team.save(), membership.save()]);
     });
 }
+exports.createTeam = createTeam;
 //
 // Basically what this does it make a list of members for  team.
 // A user can have many profiles. The same user might be on Facebook, Google, Twitter, etc.
@@ -267,6 +272,7 @@ function getMemberByUserId(teamid, userid) {
         active: true
     });
 }
+exports.getMemberByUserId = getMemberByUserId;
 function getMemberships(teamid) {
     return membership_1.MembershipObject.find({
         team: teamid,
@@ -277,8 +283,9 @@ function getMemberships(teamid) {
         email: 1
     });
 }
+exports.getMemberships = getMemberships;
 function getMemberByEmail(teamid, email) {
-    var standardized_email = utils.sanitizeEmail(email);
+    var standardized_email = (0, utils_1.sanitizeEmail)(email);
     return membership_1.MembershipObject.findOne({
         team: teamid,
         email: standardized_email,
@@ -286,7 +293,7 @@ function getMemberByEmail(teamid, email) {
     });
 }
 function findMemberByContact(teamid, contact) {
-    var email = utils.sanitizeEmail(contact);
+    var email = (0, utils_1.sanitizeEmail)(contact);
     //var phone = teams.standardizePhone(contact);
     if (email) {
         return membership_1.MembershipObject.findOne({
@@ -354,10 +361,10 @@ function notifyMember(memberId, subject, body) {
         for (let i = 0; i < teamMember.contacts.length; i++) {
             let contact = teamMember.contacts[i];
             if (contact.contactType == 'phone') {
-                yield sms.send(contact.contact, body);
+                yield (0, sms_1.smsSend)(contact.contact, body);
             }
             if (contact.contactType == 'email') {
-                yield smtp.send(contact.contact, subject, body);
+                yield (0, smtp_1.smtpSend)(contact.contact, subject, body);
             }
         }
     });
@@ -411,6 +418,7 @@ function notifyTeam(teamid, subject, body) {
         });
     });
 }
+exports.notifyTeam = notifyTeam;
 function notifyOwners(teamid, subject, body) {
     return __awaiter(this, void 0, void 0, function* () {
         yield getOwners(teamid)
@@ -513,7 +521,7 @@ function importMembers(teamid, owner, text) {
 function createBounty(teamid, name, amount) {
     var bounty = new team_1.TeamBountyObject({
         team: teamid,
-        name: utils.sanitizeName(name),
+        name: (0, utils_1.sanitizeName)(name),
         amount: amount
     });
     return bounty.save();
@@ -532,6 +540,7 @@ function getBounties(teamid, active = true) {
 function getBounty(bountyid) {
     return team_1.TeamBountyObject.findById(bountyid);
 }
+exports.getBounty = getBounty;
 function activateBounty(bountyid) {
     return team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
         $set: {
@@ -553,7 +562,7 @@ function deactivateBounty(bountyid) {
 function updateBounty(bountyid, update) {
     return __awaiter(this, void 0, void 0, function* () {
         if (update.name) {
-            update.name = utils.sanitizeName(update.name);
+            update.name = (0, utils_1.sanitizeName)(update.name);
         }
         if (update.active !== undefined) {
             throw "Active status can only be updated through deactivateBounty()";
@@ -573,6 +582,7 @@ function incrementSentCount(memberid, count = 1) {
         new: true
     });
 }
+exports.incrementSentCount = incrementSentCount;
 function incrementReceivedCount(memberid, count = 1) {
     return membership_1.MembershipObject.findByIdAndUpdate(memberid, {
         $inc: {
@@ -582,6 +592,7 @@ function incrementReceivedCount(memberid, count = 1) {
         new: true
     });
 }
+exports.incrementReceivedCount = incrementReceivedCount;
 function incrementIdeaCount(memberid, count = 1) {
     return membership_1.MembershipObject.findByIdAndUpdate(memberid, {
         $inc: {
@@ -591,6 +602,7 @@ function incrementIdeaCount(memberid, count = 1) {
         new: true
     });
 }
+exports.incrementIdeaCount = incrementIdeaCount;
 function updateTeam(teamid, update) {
     if (update.name) {
         update.name = update.name.slice(0, 40).trim();
@@ -608,21 +620,25 @@ function resetMember(member) {
 }
 function updateMember(memberid, update) {
     //Update to allow removal of email or phone
-    let name = utils.sanitizeName(update.name);
+    let name = (0, utils_1.sanitizeName)(update.name);
     if (name) {
         update.name = name;
     }
     update.details = update.details.slice(0, 80).trim();
     update.contacts.forEach(contact => {
         if (contact.contactType == 'email') {
-            contact.contact = utils.sanitizeEmail(contact.contact);
+            let sanitized = (0, utils_1.sanitizeEmail)(contact.contact);
+            if (sanitized) {
+                contact.contact = sanitized;
+            }
         }
         if (contact.contactType == 'phone') {
-            contact.contact = utils.sanitizePhone(contact.contact);
+            contact.contact = (0, utils_1.sanitizePhone)(contact.contact);
         }
     });
     return membership_1.MembershipObject.findByIdAndUpdate(memberid, update);
 }
+exports.updateMember = updateMember;
 function setMemberPrivileges(memberid, privileges) {
     var update = {
         owner: false
@@ -794,52 +810,4 @@ function getMemberById(memberId) {
         return membership_1.MembershipObject.findById(memberId);
     });
 }
-module.exports = {
-    activateBounty,
-    addDefaultOwner,
-    addMember,
-    addMemberByContact,
-    adjustSentCount,
-    availablePrizes,
-    awardPrizeTo,
-    createBounty,
-    createPrize,
-    createTeam,
-    createTeamName,
-    deactivateBounty,
-    deactivateMember,
-    deactivePrize,
-    deleteOrphans,
-    deleteTeam,
-    findMemberByContact,
-    forEach,
-    getBounties,
-    getBounty,
-    getMember,
-    getMemberById,
-    getMemberByEmail,
-    getMemberByUserId,
-    getMemberships,
-    getNewMembers,
-    getOwners,
-    getDraftPrize,
-    getPrize,
-    getTeam,
-    getTeams,
-    getUsersMemberships,
-    importMembers,
-    incrementIdeaCount,
-    incrementReceivedCount,
-    incrementSentCount,
-    nextAvailablePrize,
-    notifyMember,
-    notifyOwners,
-    notifyTeam,
-    resetMember,
-    setMemberPrivileges,
-    updateBounty,
-    updateMember,
-    updateMemberCount,
-    updateTeam,
-    updateUsersMemberships
-};
+exports.getMemberById = getMemberById;

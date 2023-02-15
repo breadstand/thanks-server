@@ -2,19 +2,17 @@ import { ObjectId } from "mongoose";
 import { ChangeObject } from "../models/change";
 import { StoredImage, StoredImageObject } from "../models/image";
 import { Address, AddressFilter, AddressObject, User, UserObject, VerifyCodeResult } from "../models/user";
+import { smsSend } from "./sms";
+import { smtpSend } from "./smtp";
+import { sanitizeEmail, sanitizePhone } from "./utils";
 
 const UserStats = require('../models/user').UserStats;
 
 const UserAvailability = require('../models/user').UserAvailability;
-const utils = require('../../services/utils');
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY,{
     apiVersion: process.env.STRIPE_API_VERSION
 });
-const images = require('../../services/images');
-const mongoose = require('mongoose');
 const Change = require('../models/change').Change;
-const smtp = require('../../services/smtp');
-const sms = require('../../services/sms');
 const cryptoRandomString = require('crypto-random-string');
 const {phone} = require('phone');
 
@@ -22,10 +20,10 @@ const {phone} = require('phone');
 async function createUser(contact:string,contactType:string,name:string|null=null) {
     let sanitizedContact = null
     if (contactType == 'email') {
-        sanitizedContact = utils.sanitizeEmail(contact);
+        sanitizedContact = sanitizeEmail(contact);
     }
     if (contactType == 'phone') {
-        sanitizedContact = utils.sanitizePhone(contact);
+        sanitizedContact = sanitizePhone(contact);
     }
 
     let existingUser = await findUserByContact(contact,contactType)
@@ -49,11 +47,11 @@ async function createUser(contact:string,contactType:string,name:string|null=nul
 	return user;
 }
 
-function getUser(userId:ObjectId) {
+export function getUser(userId:ObjectId) {
 	return UserObject.findById(userId);
 }
 
-async function updateUser(user: User,update:User,byUserId:ObjectId) {
+export async function updateUser(user: User,update:User,byUserId:ObjectId) {
 	let change = new ChangeObject({
         item: 'user',
         id: user._id,
@@ -169,7 +167,7 @@ async function addAddress(user: User,newAddress:Address,byUserId: ObjectId) {
 		}
 	}
 	let address = new AddressObject(newAddress);
-	address.phone = utils.sanitizePhone(address.phone);
+	address.phone = sanitizePhone(address.phone);
 	address.user = user._id;
 	address.active = true;
 	await address.save();
@@ -195,7 +193,7 @@ async function updateAddress(address: Address,update:Address,byUserId:ObjectId) 
     });
 
 	if (update.phone) {
-		update.phone = 	utils.sanitizePhone(update.phone);
+		update.phone = 	sanitizePhone(update.phone);
 	}
 
 	let addressProperties = ['name','organization','street','street2','city','state','postalCode','phone','active'];
@@ -360,18 +358,18 @@ async function notifyUser(userId:ObjectId, subject:string, body:string) {
     user.contacts.forEach( async contact =>  {
         if (contact.contactType == 'email') {
             let email = contact.contact
-            await smtp.send(email, subject, body);
+            await smtpSend(email, subject, body);
         }
         else if (contact.contactType == 'phone') {
             let phone = contact.contact
-            await sms.send(phone,body);
+            await smsSend(phone,body);
         }
     })
 
 }
 
 
-async function sendCodeToVerifyContact(contact:string,contactType:string) {
+export async function sendCodeToVerifyContact(contact:string,contactType:string) {
 	let user = await findUserByContact(contact,contactType);
 	if (!user) {
 		user = await createUser(contact,contactType);
@@ -401,16 +399,10 @@ async function sendCodeToVerifyContact(contact:string,contactType:string) {
 };
 
 
-async function verifyCode(contact:string,contactType:string,code:string) {
-	let result:VerifyCodeResult = {
-		success: false,
-		error: "The code is invalid.",
-		data: null
-	};
-
+export async function verifyCode(contact:string,contactType:string,code:string) {
     let user = await findUserByContact(contact,contactType);
     if (!user) {
-        return result
+        return null
     }
 
 	let currentTime = new Date().getTime();
@@ -423,37 +415,9 @@ async function verifyCode(contact:string,contactType:string,code:string) {
         foundContact.verifyCode = null
         foundContact.verifyCodeExpiration = null
         await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts})
-		result.data = user;
-		result.error = null;
-		result.success = true;
-		return result;
+		return user;
     }
 
-	return result;
+	return null;
 };
 
-
-module.exports = {
-	addAddress,
-	createUser,
-	deleteAddress,
-	deleteUser,
-	findUserByContact,
-	getAddress,
-	getAddresses,
-	getDefaultPaymentMethod,
-	getStat,
-	getStripeCustomerId,
-	getUser,
-	getUsers,
-	hasNexus,
-	incrementStat,
-	makeAdmin,
-	notifyUser,
-	search,
-	sendCodeToVerifyContact,
-	setDefaultPaymentMethod,
-	updateAddress,
-	updateUser,
-	verifyCode
-};

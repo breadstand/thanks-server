@@ -19,6 +19,7 @@ const postSchema = new mongoose_1.Schema({
     category: String,
     title: String,
     mood: String,
+    summary: String,
     image: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'image'

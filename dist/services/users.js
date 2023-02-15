@@ -9,31 +9,29 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.findUserByContact = void 0;
+exports.verifyCode = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
 const change_1 = require("../models/change");
 const image_1 = require("../models/image");
 const user_1 = require("../models/user");
+const sms_1 = require("./sms");
+const smtp_1 = require("./smtp");
+const utils_1 = require("./utils");
 const UserStats = require('../models/user').UserStats;
 const UserAvailability = require('../models/user').UserAvailability;
-const utils = require('../../services/utils');
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
     apiVersion: process.env.STRIPE_API_VERSION
 });
-const images = require('../../services/images');
-const mongoose = require('mongoose');
 const Change = require('../models/change').Change;
-const smtp = require('../../services/smtp');
-const sms = require('../../services/sms');
 const cryptoRandomString = require('crypto-random-string');
 const { phone } = require('phone');
 function createUser(contact, contactType, name = null) {
     return __awaiter(this, void 0, void 0, function* () {
         let sanitizedContact = null;
         if (contactType == 'email') {
-            sanitizedContact = utils.sanitizeEmail(contact);
+            sanitizedContact = (0, utils_1.sanitizeEmail)(contact);
         }
         if (contactType == 'phone') {
-            sanitizedContact = utils.sanitizePhone(contact);
+            sanitizedContact = (0, utils_1.sanitizePhone)(contact);
         }
         let existingUser = yield findUserByContact(contact, contactType);
         if (existingUser) {
@@ -58,6 +56,7 @@ function createUser(contact, contactType, name = null) {
 function getUser(userId) {
     return user_1.UserObject.findById(userId);
 }
+exports.getUser = getUser;
 function updateUser(user, update, byUserId) {
     return __awaiter(this, void 0, void 0, function* () {
         let change = new change_1.ChangeObject({
@@ -82,6 +81,7 @@ function updateUser(user, update, byUserId) {
         return user;
     });
 }
+exports.updateUser = updateUser;
 function makeAdmin(user, byUserId) {
     return __awaiter(this, void 0, void 0, function* () {
         let change = new Change({
@@ -176,7 +176,7 @@ function addAddress(user, newAddress, byUserId) {
             }
         }
         let address = new user_1.AddressObject(newAddress);
-        address.phone = utils.sanitizePhone(address.phone);
+        address.phone = (0, utils_1.sanitizePhone)(address.phone);
         address.user = user._id;
         address.active = true;
         yield address.save();
@@ -201,7 +201,7 @@ function updateAddress(address, update, byUserId) {
             reason: "Update Address"
         });
         if (update.phone) {
-            update.phone = utils.sanitizePhone(update.phone);
+            update.phone = (0, utils_1.sanitizePhone)(update.phone);
         }
         let addressProperties = ['name', 'organization', 'street', 'street2', 'city', 'state', 'postalCode', 'phone', 'active'];
         addressProperties.forEach(property => {
@@ -366,11 +366,11 @@ function notifyUser(userId, subject, body) {
         user.contacts.forEach((contact) => __awaiter(this, void 0, void 0, function* () {
             if (contact.contactType == 'email') {
                 let email = contact.contact;
-                yield smtp.send(email, subject, body);
+                yield (0, smtp_1.smtpSend)(email, subject, body);
             }
             else if (contact.contactType == 'phone') {
                 let phone = contact.contact;
-                yield sms.send(phone, body);
+                yield (0, sms_1.smsSend)(phone, body);
             }
         }));
     });
@@ -397,17 +397,13 @@ function sendCodeToVerifyContact(contact, contactType) {
         return user;
     });
 }
+exports.sendCodeToVerifyContact = sendCodeToVerifyContact;
 ;
 function verifyCode(contact, contactType, code) {
     return __awaiter(this, void 0, void 0, function* () {
-        let result = {
-            success: false,
-            error: "The code is invalid.",
-            data: null
-        };
         let user = yield findUserByContact(contact, contactType);
         if (!user) {
-            return result;
+            return null;
         }
         let currentTime = new Date().getTime();
         let foundContact = user.contacts.find(c => (c.contact == contact && c.contactType == contactType));
@@ -418,36 +414,10 @@ function verifyCode(contact, contactType, code) {
             foundContact.verifyCode = null;
             foundContact.verifyCodeExpiration = null;
             yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
-            result.data = user;
-            result.error = null;
-            result.success = true;
-            return result;
+            return user;
         }
-        return result;
+        return null;
     });
 }
+exports.verifyCode = verifyCode;
 ;
-module.exports = {
-    addAddress,
-    createUser,
-    deleteAddress,
-    deleteUser,
-    findUserByContact,
-    getAddress,
-    getAddresses,
-    getDefaultPaymentMethod,
-    getStat,
-    getStripeCustomerId,
-    getUser,
-    getUsers,
-    hasNexus,
-    incrementStat,
-    makeAdmin,
-    notifyUser,
-    search,
-    sendCodeToVerifyContact,
-    setDefaultPaymentMethod,
-    updateAddress,
-    updateUser,
-    verifyCode
-};
