@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sanitizePhone = exports.sanitizeName = exports.sanitizeEmail = exports.verifyToken = void 0;
 const jwt = require('jsonwebtoken');
-const ObjectId = require('mongoose').ObjectId;
+const Types = require('mongoose').Types;
 function verifyToken(req, res, next) {
     let token = null;
     if (req.headers.authorization) {
@@ -18,7 +18,7 @@ function verifyToken(req, res, next) {
     if (!payload) {
         return res.status(401).send('Unauthorized request');
     }
-    req.userId = new ObjectId(payload.subject);
+    req.userId = new Types.ObjectId(payload.subject);
     next();
 }
 exports.verifyToken = verifyToken;

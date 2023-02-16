@@ -24,7 +24,7 @@ exports.postRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, func
         let query = {
             user: req.userId,
             draft: false,
-            deleted: false
+            deleted: { $ne: true }
         };
         let sort = {
             lastUpdate: 'desc',
@@ -64,7 +64,7 @@ exports.postRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, func
         else {
             // put sort in here
             let posts = yield post_1.PostObject.find(query)
-                .sort({})
+                .sort(sort)
                 .limit(limit + 1);
             // When the query is "starting_after", the
             // sort is reversed, so we have to reverse it back.
@@ -104,7 +104,7 @@ exports.postRoutes.post('/', (req, res) => {
     let postData = req.body;
     delete req.body._id;
     let post = new post_1.PostObject(postData);
-    post.user = new ObjectId(req.userId);
+    post.user = req.userId;
     post.save()
         .then(savedPost => {
         res.status(200).send({

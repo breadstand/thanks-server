@@ -111,7 +111,7 @@ postRoutes.post('/', (req, res) => {
     let postData = req.body
     delete req.body._id
     let post = new PostObject(postData)
-    post.user = new ObjectId(req.userId);
+    post.user = req.userId;
     post.save()
         .then(savedPost => {
             res.status(200).send({

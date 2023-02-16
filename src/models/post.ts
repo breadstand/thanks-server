@@ -23,6 +23,7 @@ export interface Post {
     negativeBeliefs: string[],  
     preferredBeliefs: string[],
     preferredFeelings: string, 
+    preferredFeelingsList: string[],
     preferredThoughts: string,
     actionItems: [{
         action: string,
@@ -69,6 +70,7 @@ const postSchema = new Schema<Post>({
     negativeBeliefs: [String],  
     preferredBeliefs: [String],
     preferredFeelings: String, 
+    preferredFeelingsList: [String], 
     preferredThoughts: String,
     actionItems: [{
         action: String,

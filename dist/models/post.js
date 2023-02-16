@@ -42,6 +42,7 @@ const postSchema = new mongoose_1.Schema({
     negativeBeliefs: [String],
     preferredBeliefs: [String],
     preferredFeelings: String,
+    preferredFeelingsList: [String],
     preferredThoughts: String,
     actionItems: [{
             action: String,
