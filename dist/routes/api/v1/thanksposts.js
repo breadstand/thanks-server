@@ -13,12 +13,12 @@ exports.thanksPostsRoutes = void 0;
 const express_1 = require("express");
 const teams_1 = require("../../../services/teams");
 const thanks_1 = require("../../../services/thanks");
-const ObjectId = require('mongoose').ObjectId;
+const Types = require('mongoose').Types;
 exports.thanksPostsRoutes = (0, express_1.Router)();
 exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // We only want authorized team members to see the posts
-        let teamId = new ObjectId(req.query.team);
+        let teamId = new Types.ObjectId(req.query.team);
         let member = yield (0, teams_1.getMemberByUserId)(teamId, req.userId);
         if (!member) {
             throw "User is not a member of team";

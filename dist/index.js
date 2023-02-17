@@ -33,6 +33,9 @@ app.use('/api/v1/memberships', memberships_1.membershipRoutes);
 const thanksposts_1 = require("./routes/api/v1/thanksposts");
 app.use('/api/v1/thanksposts', utils_1.verifyToken);
 app.use('/api/v1/thanksposts', thanksposts_1.thanksPostsRoutes);
+const teams_1 = require("./routes/api/v1/teams");
+app.use('/api/v1/teams', utils_1.verifyToken);
+app.use('/api/v1/teams', teams_1.teamRoutes);
 app.get('/', function (req, res) {
     res.send('Hello from server');
 });

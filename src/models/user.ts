@@ -45,7 +45,10 @@ const userSchema = new Schema<User>({
     contacts: [{
         contact: String, 
         contactType: String,
-        verified: Boolean, 
+        verified: {
+            type: Boolean,
+            default: false
+        }, 
         verifyCode: String, 
         verifyCodeExpiration: Number,
         failed: Number

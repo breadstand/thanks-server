@@ -95,6 +95,5 @@ const membershipSchema = new Schema<Membership>({
 export const MembershipObject = mongoose.model('membership',membershipSchema);
 membershipSchema.index({ "team": 1});
 membershipSchema.index({ "user": 1});
-membershipSchema.index({ "phone": 1});
-membershipSchema.index({ "email": 1});
+membershipSchema.index({ "contacts.contact": 1});
 

@@ -39,6 +39,10 @@ app.use('/api/v1/thanksposts',verifyToken)
 app.use('/api/v1/thanksposts',thanksPostsRoutes)
 
 
+import { teamRoutes } from './routes/api/v1/teams';
+app.use('/api/v1/teams',verifyToken)
+app.use('/api/v1/teams',teamRoutes)
+
 
 app.get('/',function(req,res) {
     res.send('Hello from server');

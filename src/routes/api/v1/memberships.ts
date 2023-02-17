@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { addMemberByContact, getMemberById, getMemberByUserId, getMemberships, getUsersMemberships, updateMember } from "../../../services/teams"
-const { ObjectId } = require('mongoose')
+const Types = require('mongoose').Types
 
 export var membershipRoutes = Router()
 
@@ -11,16 +11,12 @@ membershipRoutes.get('/', async (req, res) => {
         // By default we will return the users memberships.
         // If a teamid is provided then we return team members
         if (req.query.teamid) {
-            let teamId = new ObjectId(req.query.teamid)
+            let teamId = new Types.ObjectId(req.query.teamid)
             memberships = await getMemberships(teamId)
             // Make sure user is on the team
-            let foundUser = memberships.find((member) => {
-                if (member.user == req.userId) {
-                    return member
-                }
-            })
+            let foundUser = memberships.find((member) => (String(member.user) == String(req.userId)))
             if (!foundUser) {
-                res.status(401).send('Unauthorized request')
+                return res.status(401).send('Unauthorized request')
             }
         }
         else {
@@ -79,7 +75,7 @@ membershipRoutes.put('/:id', async (req, res) => {
 
     try {
         let update = req.body
-        let memberid = new ObjectId(req.params.id)
+        let memberid = new Types.ObjectId(req.params.id)
         let authorized = false
         // Authorization requirements for updating (1 of 2 conditions):
         // 1. The user is an owner and the membership is part of the team

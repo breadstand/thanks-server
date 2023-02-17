@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.membershipRoutes = void 0;
 const express_1 = require("express");
 const teams_1 = require("../../../services/teams");
-const { ObjectId } = require('mongoose');
+const Types = require('mongoose').Types;
 exports.membershipRoutes = (0, express_1.Router)();
 exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -20,16 +20,12 @@ exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0
         // By default we will return the users memberships.
         // If a teamid is provided then we return team members
         if (req.query.teamid) {
-            let teamId = new ObjectId(req.query.teamid);
+            let teamId = new Types.ObjectId(req.query.teamid);
             memberships = yield (0, teams_1.getMemberships)(teamId);
             // Make sure user is on the team
-            let foundUser = memberships.find((member) => {
-                if (member.user == req.userId) {
-                    return member;
-                }
-            });
+            let foundUser = memberships.find((member) => (String(member.user) == String(req.userId)));
             if (!foundUser) {
-                res.status(401).send('Unauthorized request');
+                return res.status(401).send('Unauthorized request');
             }
         }
         else {
@@ -80,7 +76,7 @@ exports.membershipRoutes.get('/:id', (req, res) => {
 exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let update = req.body;
-        let memberid = new ObjectId(req.params.id);
+        let memberid = new Types.ObjectId(req.params.id);
         let authorized = false;
         // Authorization requirements for updating (1 of 2 conditions):
         // 1. The user is an owner and the membership is part of the team

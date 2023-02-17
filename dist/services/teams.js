@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -811,3 +811,16 @@ function getMemberById(memberId) {
     });
 }
 exports.getMemberById = getMemberById;
+function assignUserToMembersByContact(contact, contactType, userId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let memberships = yield membership_1.MembershipObject.find({
+            "contacts.contact": "contact",
+            user: null
+        });
+        for (let i = 0; i < memberships.length; i++) {
+            let membership = memberships[i];
+            yield membership_1.MembershipObject.findByIdAndUpdate(membership._id, { user: userId });
+        }
+    });
+}
+exports.assignUserToMembersByContact = assignUserToMembersByContact;

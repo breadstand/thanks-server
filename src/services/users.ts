@@ -412,6 +412,7 @@ export async function verifyCode(contact:string,contactType:string,code:string) 
         foundContact.verifyCodeExpiration && 
         currentTime < foundContact.verifyCodeExpiration && 
         foundContact.verifyCode == code) {
+		foundContact.verified = true
         foundContact.verifyCode = null
         foundContact.verifyCodeExpiration = null
         await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts})

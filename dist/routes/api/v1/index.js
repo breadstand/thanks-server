@@ -13,6 +13,7 @@ exports.apiRootRoutes = void 0;
 const crypto_1 = require("crypto");
 const express_1 = require("express");
 const user_1 = require("../../../models/user");
+const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
 const jwt = require('jsonwebtoken');
 exports.apiRootRoutes = (0, express_1.Router)();
@@ -70,9 +71,10 @@ exports.apiRootRoutes.post('/login', (req, res) => {
         }
     });
 });
-exports.apiRootRoutes.post('/send-verify-code', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.apiRootRoutes.post('/send-code', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield (0, users_1.sendCodeToVerifyContact)(req.body.contact, req.body.contactType);
+        console.log(user === null || user === void 0 ? void 0 : user.contacts);
         res.json({
             success: true
         });
@@ -86,6 +88,7 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
     try {
         let user = yield (0, users_1.verifyCode)(req.body.contact, req.body.contactType, req.body.code);
         if (user) {
+            yield (0, teams_1.assignUserToMembersByContact)(req.body.contact, req.body.contactType, user._id);
             let payload = { subject: user._id };
             user.password = '';
             res.json({
@@ -96,7 +99,8 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
         }
         else {
             res.json({
-                success: true,
+                success: false,
+                error: "Invalid code",
                 data: null
             });
         }

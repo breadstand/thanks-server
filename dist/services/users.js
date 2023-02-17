@@ -411,6 +411,7 @@ function verifyCode(contact, contactType, code) {
             foundContact.verifyCodeExpiration &&
             currentTime < foundContact.verifyCodeExpiration &&
             foundContact.verifyCode == code) {
+            foundContact.verified = true;
             foundContact.verifyCode = null;
             foundContact.verifyCodeExpiration = null;
             yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });

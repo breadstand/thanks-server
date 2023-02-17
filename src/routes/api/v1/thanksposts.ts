@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { getMemberByUserId } from "../../../services/teams"
 import { createThanks, getThanksPosts } from "../../../services/thanks"
-const ObjectId = require('mongoose').ObjectId
+const Types = require('mongoose').Types
 
 export var thanksPostsRoutes = Router()
 
@@ -10,7 +10,7 @@ thanksPostsRoutes.get('/', async (req, res) => {
 
     try {
         // We only want authorized team members to see the posts
-        let teamId = new ObjectId(req.query.team)
+        let teamId = new Types.ObjectId(req.query.team)
         let member = await getMemberByUserId(teamId,req.userId)
         if (!member) {
             throw "User is not a member of team"

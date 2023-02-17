@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { Router } from 'express'
 import { User } from '../../../models/user';
 import { UserObject } from '../../../models/user';
+import { assignUserToMembersByContact } from '../../../services/teams';
 import { sendCodeToVerifyContact, verifyCode } from '../../../services/users'
 
 const jwt = require('jsonwebtoken');
@@ -69,9 +70,10 @@ apiRootRoutes.post('/login', (req,res) => {
 
 
 
-apiRootRoutes.post('/send-verify-code',async (req,res) => {
+apiRootRoutes.post('/send-code',async (req,res) => {
     try{
         let user = await sendCodeToVerifyContact(req.body.contact,req.body.contactType)
+        console.log(user?.contacts)
         res.json({
             success: true
         })
@@ -80,7 +82,6 @@ apiRootRoutes.post('/send-verify-code',async (req,res) => {
         console.log(err)
         res.status(500).send('Internal server error')
     }
-
 })
 
 
@@ -88,6 +89,8 @@ apiRootRoutes.post('/verify-code',async (req,res) => {
     try{
         let user = await verifyCode(req.body.contact,req.body.contactType,req.body.code)
         if (user) {
+            await assignUserToMembersByContact(req.body.contact,req.body.contactType,user._id)
+
             let payload = {subject: user._id }
             user.password = ''
             res.json({
@@ -97,7 +100,8 @@ apiRootRoutes.post('/verify-code',async (req,res) => {
             })
         } else { 
             res.json({
-                success: true,
+                success: false,
+                error: "Invalid code",
                 data: null 
             })
         }

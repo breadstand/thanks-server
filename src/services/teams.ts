@@ -3,7 +3,7 @@ import { AnyARecord } from "dns";
 import { ObjectId } from "mongoose";
 import { Membership, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
 import { Team, TeamObject, TeamBountyObject, TeamPrizeObject } from "../models/team";
-import { User } from "../models/user";
+import { User, UserObject } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
 import { findUserByContact } from "./users";
@@ -860,3 +860,15 @@ export async function getMemberById(memberId:ObjectId) {
 }
 
 
+export async function assignUserToMembersByContact(contact: string,contactType:string,userId:ObjectId) {
+	let memberships = await MembershipObject.find({ 
+		"contacts.contact": "contact", 
+		user: null
+	})
+
+	for (let i = 0; i < memberships.length;i++) {
+		let membership = memberships[i]
+		await MembershipObject.findByIdAndUpdate(membership._id,{user: userId})			
+	}
+
+}
