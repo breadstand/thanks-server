@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyCode = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
+exports.verifyUserContact = exports.findUserAndVerifyCode = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
 const change_1 = require("../models/change");
 const image_1 = require("../models/image");
 const user_1 = require("../models/user");
@@ -399,12 +399,19 @@ function sendCodeToVerifyContact(contact, contactType) {
 }
 exports.sendCodeToVerifyContact = sendCodeToVerifyContact;
 ;
-function verifyCode(contact, contactType, code) {
+function findUserAndVerifyCode(contact, contactType, code) {
     return __awaiter(this, void 0, void 0, function* () {
         let user = yield findUserByContact(contact, contactType);
         if (!user) {
             return null;
         }
+        return verifyUserContact(user, contact, contactType, code);
+    });
+}
+exports.findUserAndVerifyCode = findUserAndVerifyCode;
+;
+function verifyUserContact(user, contact, contactType, code) {
+    return __awaiter(this, void 0, void 0, function* () {
         let currentTime = new Date().getTime();
         let foundContact = user.contacts.find(c => (c.contact == contact && c.contactType == contactType));
         if (foundContact &&
@@ -414,11 +421,20 @@ function verifyCode(contact, contactType, code) {
             foundContact.verified = true;
             foundContact.verifyCode = null;
             foundContact.verifyCodeExpiration = null;
-            yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
-            return user;
+            let updatedUser = yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
+            // Remove contact from all other users.
+            let usersWithContact = yield user_1.UserObject.find({ "contact.contact": contact });
+            for (let i = 0; i < usersWithContact.length; i++) {
+                let u = usersWithContact[i];
+                // Don't update the current user
+                if (String(u._id) == String(updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser._id)) {
+                    break;
+                }
+            }
+            return updatedUser;
         }
         return null;
     });
 }
-exports.verifyCode = verifyCode;
+exports.verifyUserContact = verifyUserContact;
 ;

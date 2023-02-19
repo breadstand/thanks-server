@@ -399,11 +399,18 @@ export async function sendCodeToVerifyContact(contact:string,contactType:string)
 };
 
 
-export async function verifyCode(contact:string,contactType:string,code:string) {
+
+export async function findUserAndVerifyCode(contact:string,contactType:string,code:string) {
     let user = await findUserByContact(contact,contactType);
     if (!user) {
         return null
     }
+
+	return verifyUserContact(user,contact,contactType,code)
+};
+
+
+export async function verifyUserContact(user:User,contact:string,contactType:string,code:string) {
 
 	let currentTime = new Date().getTime();
     let foundContact = user.contacts.find( c => 
@@ -415,8 +422,26 @@ export async function verifyCode(contact:string,contactType:string,code:string) 
 		foundContact.verified = true
         foundContact.verifyCode = null
         foundContact.verifyCodeExpiration = null
-        await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts})
-		return user;
+        let updatedUser = await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts})
+		// Remove contact from all other users.
+		/*
+		UserObject.find({"contact.contact":contact},
+		 { $pull: { "contact":contact} })
+		*/
+
+		let usersWithContact = await UserObject.find({"contact.contact":contact})
+		for (let i = 0; i < usersWithContact.length;i++) {
+			let u = usersWithContact[i]
+			// Don't update the current user
+			if ( String(u._id) == String(updatedUser?._id)) {
+				break
+			}
+
+
+		}
+
+
+		return updatedUser;
     }
 
 	return null;

@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { UserObject } from '../../../models/user'
+import { User, UserObject } from '../../../models/user'
+import { verifyUserContact } from '../../../services/users'
 export var userRoutes = Router()
 
 userRoutes.get('/:id',(req,res) => {
@@ -18,7 +19,6 @@ userRoutes.get('/:id',(req,res) => {
         res.status(500).send('Internal server error')
     })
 })
-
 
 userRoutes.put('/:id',(req,res) => {
 
@@ -40,3 +40,32 @@ userRoutes.put('/:id',(req,res) => {
             res.status(500).send('Internal server error')
         })
 })
+
+userRoutes.put('/:id/verify-contact', async (req,res) =>{
+    try{
+        let user:User|null = await UserObject.findById(req.userId)
+        if (!user) {
+            throw "Invalid user"
+        }
+
+        user = await verifyUserContact(user,
+                req.body.contact,
+                req.body.contactType,
+                req.body.code)
+        if (user) {
+            user.password = ''
+            res.json({
+                success: true,
+                data: user
+            })
+        } else { 
+            res.json({
+                success: false,
+                error: "Invalid code",
+                data: null 
+            })
+        }
+    } catch(err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }})

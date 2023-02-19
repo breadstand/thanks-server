@@ -86,7 +86,7 @@ exports.apiRootRoutes.post('/send-code', (req, res) => __awaiter(void 0, void 0,
 }));
 exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let user = yield (0, users_1.verifyCode)(req.body.contact, req.body.contactType, req.body.code);
+        let user = yield (0, users_1.findUserAndVerifyCode)(req.body.contact, req.body.contactType, req.body.code);
         if (user) {
             yield (0, teams_1.assignUserToMembersByContact)(req.body.contact, req.body.contactType, user._id);
             let payload = { subject: user._id };
