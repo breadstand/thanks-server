@@ -33,7 +33,9 @@ exports.userRoutes.put('/:id', (req, res) => {
     let options = {
         returnDocument: 'after',
     };
-    user_1.UserObject.findByIdAndUpdate(req.userId, req.body, options)
+    user_1.UserObject.findByIdAndUpdate(req.userId, req.body, {
+        returnDocument: 'after'
+    })
         .then(user => {
         if (user) {
             user.password = '';

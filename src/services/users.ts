@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { ChangeObject } from "../models/change";
 import { StoredImage, StoredImageObject } from "../models/image";
-import { Address, AddressFilter, AddressObject, User, UserObject, VerifyCodeResult } from "../models/user";
+import { Address, AddressFilter, AddressObject, User, UserContact, UserObject, VerifyCodeResult } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
 import { sanitizeEmail, sanitizePhone } from "./utils";
@@ -370,13 +370,21 @@ async function notifyUser(userId:ObjectId, subject:string, body:string) {
 
 
 export async function sendCodeToVerifyContact(contact:string,contactType:string) {
-	let user = await findUserByContact(contact,contactType);
+	let user:User|null = await findUserByContact(contact,contactType);
 	if (!user) {
 		user = await createUser(contact,contactType);
 	}
     if (!user) {
         return
     }
+
+	user = await addContact(user,contact,contactType)
+	return user;
+};
+
+
+
+export async function addContact(user:User,contact:string,contactType:string) {
 
 	let verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
 	let verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
@@ -387,7 +395,17 @@ export async function sendCodeToVerifyContact(contact:string,contactType:string)
     if (foundContact) {
         foundContact.verifyCode = verifyCode
         foundContact.verifyCodeExpiration = verifyCodeExpiration
-    }
+    } else {
+		let newContact:UserContact = {
+			contact: contact,
+			contactType: contactType,
+			verifyCode: verifyCode,
+			verifyCodeExpiration: verifyCodeExpiration,
+			verified: false,
+			failed: 0
+		}
+		user.contacts.push(newContact)
+	}
 
 	await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts});
 	await notifyUser(user._id,
@@ -397,6 +415,7 @@ export async function sendCodeToVerifyContact(contact:string,contactType:string)
 
 	return user;
 };
+
 
 
 
@@ -419,10 +438,14 @@ export async function verifyUserContact(user:User,contact:string,contactType:str
         foundContact.verifyCodeExpiration && 
         currentTime < foundContact.verifyCodeExpiration && 
         foundContact.verifyCode == code) {
+			console.log('verified')
 		foundContact.verified = true
         foundContact.verifyCode = null
         foundContact.verifyCodeExpiration = null
-        let updatedUser = await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts})
+        let updatedUser = await UserObject.findByIdAndUpdate(user._id,
+			{contacts: user.contacts},{new: true})
+		
+
 		// Remove contact from all other users.
 		/*
 		UserObject.find({"contact.contact":contact},
@@ -447,3 +470,18 @@ export async function verifyUserContact(user:User,contact:string,contactType:str
 	return null;
 };
 
+
+export async function removeContact(user:User,contact:string,contactType:string) {
+
+    let foundContact = user.contacts.findIndex( c => 
+        (c.contactType == contactType && c.contact == contact))
+
+
+    if (foundContact < 0) {
+		return null
+    }
+	user.contacts.splice(foundContact,1)
+
+	await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts});
+	return user;
+};

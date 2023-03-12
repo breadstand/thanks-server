@@ -55,7 +55,7 @@ const thanksPostSchema = new mongoose_1.Schema({
 });
 exports.ThanksPostObject = (0, mongoose_1.model)('thanks_post', thanksPostSchema);
 thanksPostSchema.index({ createdBy: 1 });
-thanksPostSchema.index({ thanksFor: 1 });
+thanksPostSchema.index({ thanksTo: 1 });
 thanksPostSchema.index({ team: 1 });
 thanksPostSchema.index({ created: 1 });
 thanksPostSchema.index({ thanksFor: 1, winner: 1 });

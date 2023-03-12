@@ -3,7 +3,7 @@ require('dotenv').config()
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const mongoose = require('mongoose')
-const PORT = 3000
+const PORT = 3001
 const app:Application = express();
 
 import { verifyToken } from './services/utils';
@@ -14,10 +14,6 @@ app.use(bodyParser.json())
 import { apiRootRoutes } from './routes/api/v1/index'
 app.use('/api/v1',apiRootRoutes)
 
-import { postRoutes } from './routes/api/v1/posts';
-app.use('/api/v1/posts',verifyToken)
-app.use('/api/v1/posts',postRoutes)
-
 import { userRoutes } from './routes/api/v1/users';
 app.use('/api/v1/users',verifyToken)
 app.use('/api/v1/users',userRoutes)
@@ -25,10 +21,6 @@ app.use('/api/v1/users',userRoutes)
 import { imageRoutes } from './routes/api/v1/images';
 app.use('/api/v1/images',verifyToken)
 app.use('/api/v1/images',imageRoutes)
-
-import { habitTrackerRouters } from './routes/api/v1/habit-trackers';
-app.use('/api/v1/habit-trackers',verifyToken)
-app.use('/api/v1/habit-trackers',habitTrackerRouters)
 
 import { membershipRoutes } from './routes/api/v1/memberships';
 app.use('/api/v1/memberships',verifyToken)

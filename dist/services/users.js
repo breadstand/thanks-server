@@ -423,6 +423,10 @@ function verifyUserContact(user, contact, contactType, code) {
             foundContact.verifyCodeExpiration = null;
             let updatedUser = yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
             // Remove contact from all other users.
+            /*
+            UserObject.find({"contact.contact":contact},
+             { $pull: { "contact":contact} })
+            */
             let usersWithContact = yield user_1.UserObject.find({ "contact.contact": contact });
             for (let i = 0; i < usersWithContact.length; i++) {
                 let u = usersWithContact[i];

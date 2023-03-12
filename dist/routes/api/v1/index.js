@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.apiRootRoutes = void 0;
 const crypto_1 = require("crypto");
 const express_1 = require("express");
+const membership_1 = require("../../../models/membership");
+const thankspost_1 = require("../../../models/thankspost");
 const user_1 = require("../../../models/user");
 const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
@@ -73,6 +75,7 @@ exports.apiRootRoutes.post('/login', (req, res) => {
 });
 exports.apiRootRoutes.post('/send-code', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log('/send-code');
         let user = yield (0, users_1.sendCodeToVerifyContact)(req.body.contact, req.body.contactType);
         console.log(user === null || user === void 0 ? void 0 : user.contacts);
         res.json({
@@ -88,7 +91,21 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
     try {
         let user = yield (0, users_1.findUserAndVerifyCode)(req.body.contact, req.body.contactType, req.body.code);
         if (user) {
+            // Find members which have the same contact as the user, and 
+            // assign the user to them.
             yield (0, teams_1.assignUserToMembersByContact)(req.body.contact, req.body.contactType, user._id);
+            // Merge other users with the same contact into this user.
+            let users = yield user_1.UserObject.find({ 'contacts.contact': req.body.contact });
+            for (let i = 0; i < users.length; i++) {
+                let u = users[i];
+                if (String(u._id) == String(user._id)) {
+                    continue;
+                }
+                yield membership_1.MembershipObject.updateMany({ user: u._id }, { user: user._id });
+                yield thankspost_1.ThanksPostObject.updateMany({ createdBy: u._id }, { createdBy: user._id });
+                yield thankspost_1.ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id });
+                yield user_1.UserObject.remove(u._id);
+            }
             let payload = { subject: user._id };
             user.password = '';
             res.json({
