@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { addMemberByContact, getMemberById, getMemberByUserId, getMemberships, getUsersMemberships, updateMember } from "../../../services/teams"
+import { addMemberByContact, deactivateMember, getMemberById, getMemberByUserId, getMemberships, getUsersMemberships, updateMember } from "../../../services/teams"
 import { sanitizeEmail } from "../../../services/utils"
 const Types = require('mongoose').Types
 
@@ -128,3 +128,34 @@ membershipRoutes.put('/:id', async (req, res) => {
     }
 })
 
+membershipRoutes.delete('/:id', async (req, res) => {
+    try {
+        let memberid = new Types.ObjectId(req.params.id)
+
+        let authorized = false
+        // Authorization requirements for updating (1 of 2 conditions):
+        // 1. The user is an owner and the membership is part of the team
+        let member = await getMemberById(memberid)
+        let usersMembership = await getMemberByUserId(member.team, req.userId)
+        if (usersMembership.owner) {
+            authorized = true
+        }
+
+        if (authorized) {
+            let membership = await deactivateMember(memberid)
+            res.json({
+                success: true,
+                data: membership
+            })
+        } else {
+            return res.json({
+                success: false,
+                error: 'Unauthorized: You are not a team owner',
+                data: {}
+            })
+        }
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')    
+    }
+})

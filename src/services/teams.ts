@@ -366,7 +366,7 @@ function updateMemberCount(teamid:ObjectId) {
 }
 
 
-async function deactivateMember(memberId:ObjectId) {
+export async function deactivateMember(memberId:ObjectId) {
 	var member = await MembershipObject.findOneAndUpdate(
 		{
 			_id: memberId,
