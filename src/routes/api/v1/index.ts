@@ -106,7 +106,7 @@ apiRootRoutes.post('/verify-code', async (req, res) => {
                 await MembershipObject.updateMany({ user: u._id }, { user: user._id })
                 await ThanksPostObject.updateMany({ createdBy: u._id }, { createdBy: user._id })
                 await ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id })
-                await UserObject.remove(u._id)
+                await UserObject.deleteOne({_id: u._id})
             }
 
             let payload = { subject: user._id }

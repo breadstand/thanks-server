@@ -45,10 +45,10 @@ exports.membershipRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 
     try {
         let ownerId = req.body.owner;
         let owner = yield (0, teams_1.getMemberById)(ownerId);
-        if (owner.user != req.userId) {
+        if (String(owner.user) != String(req.userId)) {
             throw `User ${req.userId} is not ${owner.name}/${owner.user} `;
         }
-        let newMember = yield (0, teams_1.addMemberByContact)(req.body.team, owner, req.body.name, req.body.contact);
+        let newMember = yield (0, teams_1.addMemberByContact)(req.body.team, owner, req.body.name, req.body.contact, req.body.contactType);
         res.status(200).send({
             success: true,
             data: newMember

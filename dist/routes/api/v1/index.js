@@ -104,7 +104,7 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
                 yield membership_1.MembershipObject.updateMany({ user: u._id }, { user: user._id });
                 yield thankspost_1.ThanksPostObject.updateMany({ createdBy: u._id }, { createdBy: user._id });
                 yield thankspost_1.ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id });
-                yield user_1.UserObject.remove(u._id);
+                yield user_1.UserObject.deleteOne({ _id: u._id });
             }
             let payload = { subject: user._id };
             user.password = '';

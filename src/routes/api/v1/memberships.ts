@@ -1,5 +1,6 @@
 import { Router } from "express"
 import { addMemberByContact, getMemberById, getMemberByUserId, getMemberships, getUsersMemberships, updateMember } from "../../../services/teams"
+import { sanitizeEmail } from "../../../services/utils"
 const Types = require('mongoose').Types
 
 export var membershipRoutes = Router()
@@ -7,6 +8,8 @@ export var membershipRoutes = Router()
 membershipRoutes.get('/', async (req, res) => {
 
     try {
+
+
         let memberships = []
         // By default we will return the users memberships.
         // If a teamid is provided then we return team members
@@ -36,15 +39,34 @@ membershipRoutes.get('/', async (req, res) => {
 
 
 membershipRoutes.post('/', async (req, res) => {
-
     try {
+        let missingFields = []
+        if (!req.body.contact) {
+            missingFields.push('contact')
+        }
+        if (!req.body.contactType) {
+            missingFields.push('contactType')
+        }
+        if (!req.body.owner) {
+            missingFields.push('owner')
+        }
+        if (missingFields.length > 0) {
+            return res.json({
+                success: false,
+                error: 'Missing: '+missingFields.join(', '),
+                data: {}
+            })
+        }
+
         let ownerId = req.body.owner
         let owner = await getMemberById(ownerId)
-        if (owner.user != req.userId) {
+        if (String(owner.user) != String(req.userId)) {
             throw `User ${req.userId} is not ${owner.name}/${owner.user} `
         }
+        
+
         let newMember = await addMemberByContact(req.body.team,
-            owner, req.body.name, req.body.contact)
+            owner, req.body.name, req.body.contact,req.body.contactType)
         res.status(200).send({
             success: true,
             data: newMember

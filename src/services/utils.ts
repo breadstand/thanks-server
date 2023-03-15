@@ -27,7 +27,7 @@ const {phone} = require('phone');
 const smtp = require('../services/smtp');
 const sms = require('../services/sms');
 
-export function sanitizeEmail(email:string) {
+export function sanitizeEmail(email:string):string|undefined {
     if (!email) {
       return undefined;
     }

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyUserContact = exports.findUserAndVerifyCode = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
+exports.removeContact = exports.verifyUserContact = exports.findUserAndVerifyCode = exports.addContact = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
 const change_1 = require("../models/change");
 const image_1 = require("../models/image");
 const user_1 = require("../models/user");
@@ -384,6 +384,14 @@ function sendCodeToVerifyContact(contact, contactType) {
         if (!user) {
             return;
         }
+        user = yield addContact(user, contact, contactType);
+        return user;
+    });
+}
+exports.sendCodeToVerifyContact = sendCodeToVerifyContact;
+;
+function addContact(user, contact, contactType) {
+    return __awaiter(this, void 0, void 0, function* () {
         let verifyCode = cryptoRandomString({ length: 6, type: 'numeric' });
         let verifyCodeExpiration = new Date().getTime() + 15 * 1000 * 60;
         let foundContact = user.contacts.find(c => (c.contactType == contactType && c.contact == contact));
@@ -391,13 +399,24 @@ function sendCodeToVerifyContact(contact, contactType) {
             foundContact.verifyCode = verifyCode;
             foundContact.verifyCodeExpiration = verifyCodeExpiration;
         }
+        else {
+            let newContact = {
+                contact: contact,
+                contactType: contactType,
+                verifyCode: verifyCode,
+                verifyCodeExpiration: verifyCodeExpiration,
+                verified: false,
+                failed: 0
+            };
+            user.contacts.push(newContact);
+        }
         yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
         yield notifyUser(user._id, 'Verification Code', 'Here is your breadstand.com verification code: ' + verifyCode +
             '. If you did not request a code, contact Breadstand.');
         return user;
     });
 }
-exports.sendCodeToVerifyContact = sendCodeToVerifyContact;
+exports.addContact = addContact;
 ;
 function findUserAndVerifyCode(contact, contactType, code) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -418,10 +437,11 @@ function verifyUserContact(user, contact, contactType, code) {
             foundContact.verifyCodeExpiration &&
             currentTime < foundContact.verifyCodeExpiration &&
             foundContact.verifyCode == code) {
+            console.log('verified');
             foundContact.verified = true;
             foundContact.verifyCode = null;
             foundContact.verifyCodeExpiration = null;
-            let updatedUser = yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
+            let updatedUser = yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts }, { new: true });
             // Remove contact from all other users.
             /*
             UserObject.find({"contact.contact":contact},
@@ -441,4 +461,17 @@ function verifyUserContact(user, contact, contactType, code) {
     });
 }
 exports.verifyUserContact = verifyUserContact;
+;
+function removeContact(user, contact, contactType) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let foundContact = user.contacts.findIndex(c => (c.contactType == contactType && c.contact == contact));
+        if (foundContact < 0) {
+            return null;
+        }
+        user.contacts.splice(foundContact, 1);
+        yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
+        return user;
+    });
+}
+exports.removeContact = removeContact;
 ;

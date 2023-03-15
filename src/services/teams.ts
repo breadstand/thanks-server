@@ -66,62 +66,67 @@ We have a couple of situations:
 
 
 
-export async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string, contact:string) {
-
+export async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string, contact:string,contactType:string) {
 	var n = sanitizeName(name);
-	var e = sanitizeEmail(contact);
-	var p = sanitizePhone(contact);
 
 	if (!n) {
 		return null;
 	}
-	if (!e && !p) {
-		return null;
-	}
 
-	var membership = undefined;
+	let c = undefined
 	let teamMember = null;
 
-	// See if the user already exists
-	if (e) {
-		teamMember = await MembershipObject.findOne({
-			team: teamid,
-			email: e
-		});
-	} else if (p) {
-		teamMember = await MembershipObject.findOne({
-			team: teamid,
-			phone: p
-		});
+	if (contactType=='phone') {
+		c = sanitizePhone(contact)
+	}
+	if (contactType=='email') {
+		c = sanitizeEmail(contact)
+	}
+	if (!c) {
+		return null
 	}
 
-	// If they do, make sure they are active.
-	if (teamMember) {
-		teamMember.active = true;
-		teamMember.name = n;
-	}
-	// If not, then add the member
+	// See if a user exists with this contact
+	let user = await findUserByContact(c,contactType)
+
+	console.log(user)
+	// If the user exists...
+	if (user) {
+
+		// See if they are already a member of this team
+		teamMember = await MembershipObject.findOne({
+			team: teamid, 
+			user: user._id
+		})
+
+		console.log(teamMember)
+		// If they are a member, make sure they are active
+		if (teamMember) {
+			teamMember.active = true;
+			teamMember.name = n;	
+		} 
+		// If they are not, add them
+		else {
+			teamMember = new MembershipObject({
+				team: teamid,
+				name: n,
+				user: user._id,
+				active: true
+			});	
+		}
+	} 
+	// If no user exists with this contact...
 	else {
+		// Create a new team member with this contact information
 		teamMember = new MembershipObject({
 			team: teamid,
-			email: e,
-			phone: p,
 			name: n,
+			contacts: [{contact: c,contactType:contactType}],
 			active: true,
 		});
 	}
 
-	// If the member does not have a user associated
-	// see if we can associate them
-	if (!teamMember.user && e) {
-		var user = await findUserByContact(e,'email');
-		if (user) {
-			teamMember.user = user._id;
-		}
-	}
-
-	await teamMember.save();
-
+	await teamMember.save()
 	await sendInvitation(teamMember, owner);
 	await updateMemberCount(teamid);
 	return teamMember;
@@ -543,8 +548,19 @@ async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
 		}
 		let name = lineitem.slice(0,lastspace).trim();
 		let contact = lineitem.slice(lastspace).trim();
+		let contactType = ''
 
-		var m = await addMemberByContact(teamid, owner, name, contact);
+		let c = sanitizeEmail(contact)
+		if (c) {
+			contactType = 'email'
+		} else {
+			c = sanitizePhone(contact)
+			if (c) {
+				contactType = 'phone'
+			}
+		}
+
+		var m = await addMemberByContact(teamid, owner, name, contact,contactType);
 		if (m) {
 			imported.push(name);
 		} else {

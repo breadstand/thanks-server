@@ -33,6 +33,7 @@ exports.userRoutes.put('/:id', (req, res) => {
     let options = {
         returnDocument: 'after',
     };
+    console.log(req.body);
     user_1.UserObject.findByIdAndUpdate(req.userId, req.body, {
         returnDocument: 'after'
     })
@@ -50,6 +51,34 @@ exports.userRoutes.put('/:id', (req, res) => {
         res.status(500).send('Internal server error');
     });
 });
+exports.userRoutes.post('/:id/add-contact', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let user = yield user_1.UserObject.findById(req.userId);
+        if (!user) {
+            throw "Invalid user";
+        }
+        user = yield (0, users_1.addContact)(user, req.body.contact, req.body.contactType);
+        if (user) {
+            console.log(user);
+            user.password = '';
+            res.json({
+                success: true,
+                data: user
+            });
+        }
+        else {
+            res.json({
+                success: false,
+                error: "Invalid user",
+                data: null
+            });
+        }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.userRoutes.put('/:id/verify-contact', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield user_1.UserObject.findById(req.userId);
@@ -71,6 +100,26 @@ exports.userRoutes.put('/:id/verify-contact', (req, res) => __awaiter(void 0, vo
                 data: null
             });
         }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.userRoutes.put('/:id/remove-contact', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        console.log('user/remove-contact');
+        let user = yield user_1.UserObject.findById(req.userId);
+        if (!user) {
+            throw "Invalid user";
+        }
+        yield (0, users_1.removeContact)(user, req.body.contact, req.body.contactType);
+        console.log(user);
+        user.password = '';
+        res.json({
+            success: true,
+            data: user
+        });
     }
     catch (err) {
         console.log(err);

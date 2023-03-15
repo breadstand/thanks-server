@@ -65,54 +65,56 @@ We have a couple of situations:
     do what they like.
 
 */
-function addMemberByContact(teamid, owner, name, contact) {
+function addMemberByContact(teamid, owner, name, contact, contactType) {
     return __awaiter(this, void 0, void 0, function* () {
         var n = (0, utils_1.sanitizeName)(name);
-        var e = (0, utils_1.sanitizeEmail)(contact);
-        var p = (0, utils_1.sanitizePhone)(contact);
         if (!n) {
             return null;
         }
-        if (!e && !p) {
+        let c = undefined;
+        let teamMember = null;
+        if (contactType == 'phone') {
+            c = (0, utils_1.sanitizePhone)(contact);
+        }
+        if (contactType == 'email') {
+            c = (0, utils_1.sanitizeEmail)(contact);
+        }
+        if (!c) {
             return null;
         }
-        var membership = undefined;
-        let teamMember = null;
-        // See if the user already exists
-        if (e) {
+        // See if a user exists with this contact
+        let user = yield (0, users_1.findUserByContact)(c, contactType);
+        // If the user exists...
+        if (user) {
+            // See if they are already a member of this team
             teamMember = yield membership_1.MembershipObject.findOne({
                 team: teamid,
-                email: e
+                user: user._id
             });
+            // If they are a member, make sure they are active
+            if (teamMember) {
+                teamMember.active = true;
+                teamMember.name = n;
+            }
+            // If they are not, add them
+            else {
+                teamMember = new membership_1.MembershipObject({
+                    team: teamid,
+                    name: n,
+                    user: user._id,
+                    active: true
+                });
+            }
         }
-        else if (p) {
-            teamMember = yield membership_1.MembershipObject.findOne({
-                team: teamid,
-                phone: p
-            });
-        }
-        // If they do, make sure they are active.
-        if (teamMember) {
-            teamMember.active = true;
-            teamMember.name = n;
-        }
-        // If not, then add the member
+        // If no user exists with this contact...
         else {
+            // Create a new team member with this contact information
             teamMember = new membership_1.MembershipObject({
                 team: teamid,
-                email: e,
-                phone: p,
                 name: n,
+                contacts: [{ contact: c, contactType: contactType }],
                 active: true,
             });
-        }
-        // If the member does not have a user associated
-        // see if we can associate them
-        if (!teamMember.user && e) {
-            var user = yield (0, users_1.findUserByContact)(e, 'email');
-            if (user) {
-                teamMember.user = user._id;
-            }
         }
         yield teamMember.save();
         yield sendInvitation(teamMember, owner);
@@ -506,7 +508,18 @@ function importMembers(teamid, owner, text) {
             }
             let name = lineitem.slice(0, lastspace).trim();
             let contact = lineitem.slice(lastspace).trim();
-            var m = yield addMemberByContact(teamid, owner, name, contact);
+            let contactType = '';
+            let c = (0, utils_1.sanitizeEmail)(contact);
+            if (c) {
+                contactType = 'email';
+            }
+            else {
+                c = (0, utils_1.sanitizePhone)(contact);
+                if (c) {
+                    contactType = 'phone';
+                }
+            }
+            var m = yield addMemberByContact(teamid, owner, name, contact, contactType);
             if (m) {
                 imported.push(name);
             }
