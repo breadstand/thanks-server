@@ -43,6 +43,23 @@ exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0
 }));
 exports.membershipRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        let missingFields = [];
+        if (!req.body.contact) {
+            missingFields.push('contact');
+        }
+        if (!req.body.contactType) {
+            missingFields.push('contactType');
+        }
+        if (!req.body.owner) {
+            missingFields.push('owner');
+        }
+        if (missingFields.length > 0) {
+            return res.json({
+                success: false,
+                error: 'Missing: ' + missingFields.join(', '),
+                data: {}
+            });
+        }
         let ownerId = req.body.owner;
         let owner = yield (0, teams_1.getMemberById)(ownerId);
         if (String(owner.user) != String(req.userId)) {
@@ -99,6 +116,37 @@ exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, voi
         else {
             console.log('Unauthorized');
             res.status(401).send('User is not the member or is not a team owner');
+        }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.membershipRoutes.delete('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let memberid = new Types.ObjectId(req.params.id);
+        let authorized = false;
+        // Authorization requirements for updating (1 of 2 conditions):
+        // 1. The user is an owner and the membership is part of the team
+        let member = yield (0, teams_1.getMemberById)(memberid);
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(member.team, req.userId);
+        if (usersMembership.owner) {
+            authorized = true;
+        }
+        if (authorized) {
+            let membership = yield (0, teams_1.deactivateMember)(memberid);
+            res.json({
+                success: true,
+                data: membership
+            });
+        }
+        else {
+            return res.json({
+                success: false,
+                error: 'Unauthorized: You are not a team owner',
+                data: {}
+            });
         }
     }
     catch (err) {

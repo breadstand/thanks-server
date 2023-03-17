@@ -36,6 +36,7 @@ exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 
 }));
 exports.thanksPostsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log('thanksPost');
         console.log(req.body);
         let thanksPost = yield (0, thanks_1.createThanks)(req.body.team, req.body.createdBy, req.body.thanksTo, req.body.thanksFor);
         res.json({

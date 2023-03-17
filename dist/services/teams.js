@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -84,6 +84,7 @@ function addMemberByContact(teamid, owner, name, contact, contactType) {
         }
         // See if a user exists with this contact
         let user = yield (0, users_1.findUserByContact)(c, contactType);
+        console.log(user);
         // If the user exists...
         if (user) {
             // See if they are already a member of this team
@@ -91,6 +92,7 @@ function addMemberByContact(teamid, owner, name, contact, contactType) {
                 team: teamid,
                 user: user._id
             });
+            console.log(teamMember);
             // If they are a member, make sure they are active
             if (teamMember) {
                 teamMember.active = true;
@@ -356,6 +358,7 @@ function deactivateMember(memberId) {
         return member;
     });
 }
+exports.deactivateMember = deactivateMember;
 ;
 function notifyMember(memberId, subject, body) {
     return __awaiter(this, void 0, void 0, function* () {

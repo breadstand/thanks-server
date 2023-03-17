@@ -8,7 +8,7 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const PORT = 3001;
+const PORT = 3001e;
 const app = (0, express_1.default)();
 const utils_1 = require("./services/utils");
 app.use(cors());

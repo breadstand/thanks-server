@@ -21,6 +21,21 @@ exports.teamRoutes.get('/', (req, res) => {
 exports.teamRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield (0, users_1.getUser)(req.userId);
+        if (!user) {
+            return res.json({
+                success: false,
+                error: "It looks like you don't exist?",
+                data: {}
+            });
+        }
+        var usersteams = yield (0, teams_1.getUsersMemberships)(user._id);
+        if (usersteams.length >= 50) {
+            return res.json({
+                success: false,
+                error: 'You appear to be on too many teams.',
+                data: {}
+            });
+        }
         let results = yield (0, teams_1.createTeam)(user);
         let team = results[0];
         res.json({

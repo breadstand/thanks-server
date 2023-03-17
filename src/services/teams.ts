@@ -683,7 +683,9 @@ export function updateMember(memberid:ObjectId, update:Membership) {
 		update.name = name;
 	}
 
-	update.details = update.details.slice(0,80).trim();
+	if (update.details) {
+		update.details = update.details.slice(0,80).trim();
+	}
 	update.contacts.forEach( contact => {
 		if (contact.contactType == 'email') {
 			let sanitized = sanitizeEmail(contact.contact);

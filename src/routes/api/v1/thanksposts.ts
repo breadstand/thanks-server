@@ -30,6 +30,7 @@ thanksPostsRoutes.get('/', async (req, res) => {
 
 thanksPostsRoutes.post('/', async (req, res) => {
     try {
+        console.log('thanksPost')
         console.log(req.body)
         let thanksPost = await createThanks(req.body.team,req.body.createdBy,req.body.thanksTo,req.body.thanksFor)
         res.json({
