@@ -1,6 +1,5 @@
 import { Router } from "express"
 import { addMemberByContact, deactivateMember, getMemberById, getMemberByUserId, getMemberships, getUsersMemberships, updateMember } from "../../../services/teams"
-import { sanitizeEmail } from "../../../services/utils"
 const Types = require('mongoose').Types
 
 export var membershipRoutes = Router()
