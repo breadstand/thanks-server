@@ -640,7 +640,9 @@ function updateMember(memberid, update) {
     if (name) {
         update.name = name;
     }
-    update.details = update.details.slice(0, 80).trim();
+    if (update.details) {
+        update.details = update.details.slice(0, 80).trim();
+    }
     update.contacts.forEach(contact => {
         if (contact.contactType == 'email') {
             let sanitized = (0, utils_1.sanitizeEmail)(contact.contact);

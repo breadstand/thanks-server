@@ -10,21 +10,19 @@ function sanitizeFor(postfor:string,size=280) {
 	return postfor.slice(0,280).trim();
 }
 
-export function createThanks(teamid:ObjectId, frommemberid:ObjectId, tomemberid:ObjectId, message:string) {
-	var thankspost = new ThanksPostObject({
-		team: teamid,
-		createdBy: frommemberid,
-		thanksTo: tomemberid,
-		thanksFor: sanitizeFor(message),
-		posttype: 'thanks',
-	});
+export function createThanksPost(newPost: ThanksPost) {
+	var thankspost = new ThanksPostObject(newPost);
 	return thankspost.save()
 		.then( (thankspost:ThanksPost) => {
-			sendToTeam(thankspost._id);
-			return Promise.all([
-				incrementSentCount(frommemberid),
-				incrementReceivedCount(tomemberid)
-			]);
+			if (thankspost.postType == 'thanks') {
+				sendToTeam(thankspost._id);
+				return Promise.all([
+					incrementSentCount(thankspost.createdBy as ObjectId),
+					incrementReceivedCount(thankspost.thanksTo as ObjectId)
+				]);	
+			} else {
+				incrementIdeaCount(thankspost.createdBy as ObjectId)
+			}
 		}).then(results => {
 			return thankspost;
 		});
@@ -52,24 +50,6 @@ function sendToTeam(thanksid:ObjectId) {
 			console.log(err);
 		});
 }
-
-
-
-export function createIdea(teamid:ObjectId, bymemberid:ObjectId, message:string) {
-	var idea = new ThanksPostObject({
-		team: teamid,
-		from: bymemberid,
-		for: sanitizeFor(message),
-		posttype: 'idea',
-	});
-	return idea.save()
-		.then(idea => {
-			return incrementIdeaCount(bymemberid);
-		}).then(member => {
-			return idea;
-		});
-};
-
 
 
 
@@ -586,7 +566,8 @@ function getWins(tomemberid, limit = 20) {
 		});
 }
 
-function getPost(thanksid) {
+
+export async function getPost(postId:ObjectId) {
 	return ThanksPost.findOne({
 			_id: thanksid,
 			active: true
@@ -595,6 +576,8 @@ function getPost(thanksid) {
 		.populate('from')
 		.populate('approved_bounties');
 }
+
+
 
 
 function updatePost(postid, update) {
@@ -615,25 +598,31 @@ function updatePost(postid, update) {
 	});
 }
 
+*/
 
-async function deactivatePost(postid) {
-	var post = await ThanksPost.findByIdAndUpdate(postid,{
+export async function deactivatePost(postid:ObjectId):Promise<ThanksPost|null> {
+	var post = await ThanksPostObject.findByIdAndUpdate(postid,{
 		$set: {
 			active: false
 		}
 	}, {
 		new: true
-	});
-	if (post.posttype='idea') {
-		teams.incrementIdeaCount(post.from,-1);
+	}) as ThanksPost
+	if (!post) {
+		return null
+	}
+
+	if (post.postType='idea') {
+		incrementIdeaCount(post.createdBy as ObjectId,-1);
 	}
 	else {
-		teams.incrementReceivedCount(post.to,-1);
-		teams.incrementSentCount(post.from,-1);
+		incrementReceivedCount(post.thanksTo as ObjectId,-1);
+		incrementSentCount(post.createdBy as ObjectId,-1);
 	}
 	return post;
 }
 
+/*
 function deleteTeamData(teamid) {
 	return Promise.all([
 		ThanksPost.deleteMany({team: teamid}),

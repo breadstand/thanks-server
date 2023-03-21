@@ -1,6 +1,15 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getThanksPosts = exports.createIdea = exports.createThanks = void 0;
+exports.deactivatePost = exports.getThanksPosts = exports.createThanksPost = void 0;
 const thankspost_1 = require("../models/thankspost");
 const teams_1 = require("./teams");
 function sanitizeFor(postfor, size = 280) {
@@ -9,26 +18,25 @@ function sanitizeFor(postfor, size = 280) {
     }
     return postfor.slice(0, 280).trim();
 }
-function createThanks(teamid, frommemberid, tomemberid, message) {
-    var thankspost = new thankspost_1.ThanksPostObject({
-        team: teamid,
-        createdBy: frommemberid,
-        thanksTo: tomemberid,
-        thanksFor: sanitizeFor(message),
-        posttype: 'thanks',
-    });
+function createThanksPost(newPost) {
+    var thankspost = new thankspost_1.ThanksPostObject(newPost);
     return thankspost.save()
         .then((thankspost) => {
-        sendToTeam(thankspost._id);
-        return Promise.all([
-            (0, teams_1.incrementSentCount)(frommemberid),
-            (0, teams_1.incrementReceivedCount)(tomemberid)
-        ]);
+        if (thankspost.postType == 'thanks') {
+            sendToTeam(thankspost._id);
+            return Promise.all([
+                (0, teams_1.incrementSentCount)(thankspost.createdBy),
+                (0, teams_1.incrementReceivedCount)(thankspost.thanksTo)
+            ]);
+        }
+        else {
+            (0, teams_1.incrementIdeaCount)(thankspost.createdBy);
+        }
     }).then(results => {
         return thankspost;
     });
 }
-exports.createThanks = createThanks;
+exports.createThanksPost = createThanksPost;
 ;
 function sendToTeam(thanksid) {
     return thankspost_1.ThanksPostObject.findById(thanksid)
@@ -52,22 +60,6 @@ function sendToTeam(thanksid) {
         console.log(err);
     });
 }
-function createIdea(teamid, bymemberid, message) {
-    var idea = new thankspost_1.ThanksPostObject({
-        team: teamid,
-        from: bymemberid,
-        for: sanitizeFor(message),
-        posttype: 'idea',
-    });
-    return idea.save()
-        .then(idea => {
-        return (0, teams_1.incrementIdeaCount)(bymemberid);
-    }).then(member => {
-        return idea;
-    });
-}
-exports.createIdea = createIdea;
-;
 function getThanksPosts(teamid, filter) {
     var count = 20;
     var query = {
@@ -578,7 +570,8 @@ function getWins(tomemberid, limit = 20) {
         });
 }
 
-function getPost(thanksid) {
+
+export async function getPost(postId:ObjectId) {
     return ThanksPost.findOne({
             _id: thanksid,
             active: true
@@ -587,6 +580,8 @@ function getPost(thanksid) {
         .populate('from')
         .populate('approved_bounties');
 }
+
+
 
 
 function updatePost(postid, update) {
@@ -607,25 +602,31 @@ function updatePost(postid, update) {
     });
 }
 
-
-async function deactivatePost(postid) {
-    var post = await ThanksPost.findByIdAndUpdate(postid,{
-        $set: {
-            active: false
+*/
+function deactivatePost(postid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var post = yield thankspost_1.ThanksPostObject.findByIdAndUpdate(postid, {
+            $set: {
+                active: false
+            }
+        }, {
+            new: true
+        });
+        if (!post) {
+            return null;
         }
-    }, {
-        new: true
+        if (post.postType = 'idea') {
+            (0, teams_1.incrementIdeaCount)(post.createdBy, -1);
+        }
+        else {
+            (0, teams_1.incrementReceivedCount)(post.thanksTo, -1);
+            (0, teams_1.incrementSentCount)(post.createdBy, -1);
+        }
+        return post;
     });
-    if (post.posttype='idea') {
-        teams.incrementIdeaCount(post.from,-1);
-    }
-    else {
-        teams.incrementReceivedCount(post.to,-1);
-        teams.incrementSentCount(post.from,-1);
-    }
-    return post;
 }
-
+exports.deactivatePost = deactivatePost;
+/*
 function deleteTeamData(teamid) {
     return Promise.all([
         ThanksPost.deleteMany({team: teamid}),

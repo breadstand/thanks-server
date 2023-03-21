@@ -33,7 +33,6 @@ exports.userRoutes.put('/:id', (req, res) => {
     let options = {
         returnDocument: 'after',
     };
-    console.log(req.body);
     user_1.UserObject.findByIdAndUpdate(req.userId, req.body, {
         returnDocument: 'after'
     })

@@ -25,7 +25,6 @@ userRoutes.put('/:id',(req,res) => {
     let options = {
         returnDocument: 'after',
     }
-    console.log(req.body)
     UserObject.findByIdAndUpdate(req.userId,req.body,{
         returnDocument: 'after'})
         .then( user => {
