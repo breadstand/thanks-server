@@ -1,9 +1,9 @@
 import { ConnectContactLens } from "aws-sdk";
 import { AnyARecord } from "dns";
 import { ObjectId } from "mongoose";
-import { Membership, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
+import { Membership, MembershipContact, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
 import { Team, TeamObject, TeamBountyObject, TeamPrizeObject } from "../models/team";
-import { User, UserObject } from "../models/user";
+import { User, UserContact, UserObject } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
 import { findUserByContact } from "./users";
@@ -387,9 +387,19 @@ export async function deactivateMember(memberId:ObjectId) {
 };
 
 async function notifyMember(memberId:ObjectId, subject:string, body:string) {
+	console.log('notifyMember')
 	var teamMember = await getMember(memberId);
-	for (let i = 0; i < teamMember.contacts.length; i++) {
-		let contact = teamMember.contacts[i]
+
+	// Some members probably haven't logged in, so there is
+	// no user associated with them. For members who have a user
+	// send to the user's contacts. For members who do not have a user
+	// send to the member's contacts.
+	let contacts:MembershipContact[]|UserContact[] = teamMember.contacts
+	if (teamMember.user) {
+		contacts = teamMember.user.contacts
+	} 
+	for (let i = 0; i < contacts.length; i++) {
+		let contact = contacts[i]
 		if (contact.contactType == 'phone') {
 			await smsSend(contact.contact, body);
 		}
@@ -397,6 +407,7 @@ async function notifyMember(memberId:ObjectId, subject:string, body:string) {
 			await smtpSend(contact.contact, subject, body);
 		}
 	}
+
 }
 
 //

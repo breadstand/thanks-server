@@ -29,6 +29,7 @@ export function createThanksPost(newPost: ThanksPost) {
 };
 
 function sendToTeam(thanksid:ObjectId) {
+	console.log('sendToTeam()')
 	return ThanksPostObject.findById(thanksid)
 		.populate({
 			path: "createdBy"
@@ -44,7 +45,7 @@ function sendToTeam(thanksid:ObjectId) {
 				return;
 			}
 			var subject = `Thanks to ${thankspost.thanksTo.name}`;
-			var body = `Thanks To: ${thankspost.thanksTo.name}\nFor: ${thankspost.createdBy}\nFrom: ${thankspost.createdBy.name}`;
+			var body = `Thanks to ${thankspost.thanksTo.name}\n for: ${thankspost.thanksFor}\n\n-- ${thankspost.createdBy.name}`;
 			return notifyTeam(thankspost.team._id, subject, body);
 		}).catch(err => {
 			console.log(err);

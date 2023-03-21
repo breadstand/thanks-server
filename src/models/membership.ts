@@ -3,15 +3,17 @@ import { Team } from "./team";
 import { User } from "./user";
 const mongoose = require('mongoose');
 
+export interface MembershipContact {
+    contact: string,
+    contactType: string
+}
+
 export interface Membership {
     _id: ObjectId
     team: ObjectId | Team,
     user: ObjectId | User | null,
     name: string,
-    contacts: [{
-        contact: string,
-        contactType: string
-    }],
+    contacts:MembershipContact[],
     created: Date,
     lastUpdate: Date,
     details: string,
