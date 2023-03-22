@@ -2,7 +2,7 @@ import { ConnectContactLens } from "aws-sdk";
 import { AnyARecord } from "dns";
 import { ObjectId } from "mongoose";
 import { Membership, MembershipContact, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
-import { Team, TeamObject, TeamBountyObject, TeamPrizeObject } from "../models/team";
+import { Team, TeamObject, TeamBountyObject, TeamPrizeObject, TeamPrize } from "../models/team";
 import { User, UserContact, UserObject } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
@@ -809,21 +809,13 @@ async function getDraftPrize(teamId:ObjectId) {
 }
 
 
-function createPrize(teamid:ObjectId, name:string, url:string) {
+export function createPrize(prize: TeamPrize) {
 	var u = undefined;
-	if (url) {
-		u = url.trim();
-	}
-	var prize = new TeamPrizeObject({
-		team: teamid,
-		name: name.trim(),
-		active: true,
-		url: u
-	});
-	return prize.save();
+	var p = new TeamPrizeObject(prize);
+	return p.save();
 }
 
-function availablePrizes(teamid:ObjectId) {
+export async function availablePrizes(teamid:ObjectId) {
 	return TeamPrizeObject.find({
 		team: teamid,
 		awardedto: undefined,

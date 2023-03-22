@@ -1,7 +1,7 @@
 import { Router } from "express";
 import sharp from "sharp";
 import { StoredImageObject } from "../../../models/image";
-import { loadImageFromAWS, saveImageToAWS } from "../../../services/images"
+import { deleteImageBuffer, loadImageFromAWS, saveImageToAWS } from "../../../services/images"
 const multer = require('multer')
 
 export var imageRoutes = Router()
@@ -87,4 +87,35 @@ imageRoutes.get('/:image', async (req, res) => {
   }
 });
 
+
+imageRoutes.delete('/:image', async (req, res) => {
+  try {    // image can be an image._id or image._id + '.jpg'
+    let imageId = req.params.image.split('.')[0]
+
+    let image = await StoredImageObject.findOne({
+      _id: imageId,
+      user: req.userId
+    })
+    if (!image) {
+      return res.status(404).send('Not found')
+    }
+    if (String(image.user) != String(req.userId)) {
+      return res.status(401).send('Unauthorized')
+    }
+
+    await deleteImageBuffer(imageId)
+    return res.json({
+      success: true,
+      error: '',
+      data: image
+    })
+
+  }
+  catch(err) {  
+    console.log(err)
+    return res.status(500).send('Server error');
+
+  }
+
+})
 

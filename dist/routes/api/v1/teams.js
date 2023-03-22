@@ -13,6 +13,7 @@ exports.teamRoutes = void 0;
 const express_1 = require("express");
 const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
+const Types = require('mongoose').Types;
 exports.teamRoutes = (0, express_1.Router)();
 exports.teamRoutes.get('/', (req, res) => {
     console.log('Not implemented yet');
@@ -41,6 +42,79 @@ exports.teamRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.json({
             success: true,
             data: team
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.get('/:id/prizes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.id);
+        // Only team members can see the prizes
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!usersMembership) {
+            return res.json({
+                success: false,
+                error: "Unauthorized: You are not a member of this team.",
+                data: []
+            });
+        }
+        let prizes = yield (0, teams_1.availablePrizes)(teamid);
+        res.json({
+            success: true,
+            error: '',
+            data: prizes
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.post('/:id/prizes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.id);
+        let prize = req.body;
+        console.log(prize);
+        let missingFields = [];
+        if (!prize.team) {
+            missingFields.push('team');
+        }
+        if (!prize.createdBy) {
+            missingFields.push('createdBy');
+        }
+        if (!prize.name) {
+            missingFields.push('name');
+        }
+        if (missingFields.length) {
+            return res.json({
+                success: false,
+                error: 'Missing fields: ' + missingFields.join(', '),
+                data: prize
+            });
+        }
+        if (String(prize.team) != String(teamid)) {
+            return res.json({
+                success: false,
+                error: `Team: ${prize.team} does not match url team: ${teamid}`,
+                data: prize
+            });
+        }
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!usersMembership.owner) {
+            return res.json({
+                success: false,
+                error: 'You are not a team owner',
+                data: prize
+            });
+        }
+        let savedPrize = yield (0, teams_1.createPrize)(prize);
+        res.json({
+            success: true,
+            error: '',
+            data: savedPrize
         });
     }
     catch (err) {

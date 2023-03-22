@@ -89,3 +89,28 @@ exports.imageRoutes.get('/:image', (req, res) => __awaiter(void 0, void 0, void 
         res.status(404).send("Not found");
     }
 }));
+exports.imageRoutes.delete('/:image', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try { // image can be an image._id or image._id + '.jpg'
+        let imageId = req.params.image.split('.')[0];
+        let image = yield image_1.StoredImageObject.findOne({
+            _id: imageId,
+            user: req.userId
+        });
+        if (!image) {
+            return res.status(404).send('Not found');
+        }
+        if (String(image.user) != String(req.userId)) {
+            return res.status(401).send('Unauthorized');
+        }
+        yield (0, images_1.deleteImageBuffer)(imageId);
+        return res.json({
+            success: true,
+            error: '',
+            data: image
+        });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).send('Server error');
+    }
+}));

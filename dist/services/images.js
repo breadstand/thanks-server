@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadImageFromAWS = exports.saveImageToAWS = void 0;
+exports.deleteImageBuffer = exports.loadImageFromAWS = exports.saveImageToAWS = void 0;
 const aws_sdk_1 = require("aws-sdk");
 const sharp_1 = __importDefault(require("sharp"));
 function generateThumbnail(imageBuffer, width = null, height = null) {
@@ -195,3 +195,4 @@ function deleteImageBuffer(imageId) {
     });
     return Promise.all([job1, job2]);
 }
+exports.deleteImageBuffer = deleteImageBuffer;

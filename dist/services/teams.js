@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -363,8 +363,16 @@ exports.deactivateMember = deactivateMember;
 function notifyMember(memberId, subject, body) {
     return __awaiter(this, void 0, void 0, function* () {
         var teamMember = yield getMember(memberId);
-        for (let i = 0; i < teamMember.contacts.length; i++) {
-            let contact = teamMember.contacts[i];
+        // Some members probably haven't logged in, so there is
+        // no user associated with them. For members who have a user
+        // send to the user's contacts. For members who do not have a user
+        // send to the member's contacts.
+        let contacts = teamMember.contacts;
+        if (teamMember.user) {
+            contacts = teamMember.user.contacts;
+        }
+        for (let i = 0; i < contacts.length; i++) {
+            let contact = contacts[i];
             if (contact.contactType == 'phone') {
                 yield (0, sms_1.smsSend)(contact.contact, body);
             }
@@ -757,28 +765,24 @@ function getDraftPrize(teamId) {
         return prize;
     });
 }
-function createPrize(teamid, name, url) {
+function createPrize(prize) {
     var u = undefined;
-    if (url) {
-        u = url.trim();
-    }
-    var prize = new team_1.TeamPrizeObject({
-        team: teamid,
-        name: name.trim(),
-        active: true,
-        url: u
-    });
-    return prize.save();
+    var p = new team_1.TeamPrizeObject(prize);
+    return p.save();
 }
+exports.createPrize = createPrize;
 function availablePrizes(teamid) {
-    return team_1.TeamPrizeObject.find({
-        team: teamid,
-        awardedto: undefined,
-        active: true
-    }).sort({
-        name: 1
+    return __awaiter(this, void 0, void 0, function* () {
+        return team_1.TeamPrizeObject.find({
+            team: teamid,
+            awardedto: undefined,
+            active: true
+        }).sort({
+            name: 1
+        });
     });
 }
+exports.availablePrizes = availablePrizes;
 function nextAvailablePrize(teamid) {
     return team_1.TeamPrizeObject.findOne({
         team: teamid,

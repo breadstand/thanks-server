@@ -17,7 +17,6 @@ function smtpSend(to, subject, message) {
         subject: subject,
         html: message // plain text body
     };
-    //console.log(mailOptions);
     if (process.env.EMAIL_ENABLED) {
         transporter.sendMail(mailOptions, function (err, info) {
             if (err)

@@ -158,7 +158,7 @@ export function loadImageFromAWS(key:string,size:string|null=null) {
 }
 
 
-function deleteImageBuffer(imageId:string) {
+export function deleteImageBuffer(imageId:string) {
     // Load main image
     var s3 = new S3();
     var job1 =  new Promise( (resolve,reject) => {

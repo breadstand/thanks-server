@@ -69,6 +69,7 @@ const teamPrizeSchema = new mongoose_1.Schema({
         type: Date,
         default: Date.now
     },
+    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'membership' },
     team: { type: mongoose_1.Schema.Types.ObjectId, ref: 'team' },
     url: String,
     name: String,
@@ -80,11 +81,16 @@ const teamPrizeSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
-    photo: { type: mongoose_1.Schema.Types.ObjectId, ref: 'image' },
     draft: {
         type: Boolean,
         default: false
-    }
+    },
+    image: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'image'
+    },
+    imageWidth: Number,
+    imageHeight: Number,
 });
 exports.TeamPrizeObject = (0, mongoose_1.model)('prize', teamPrizeSchema);
 teamPrizeSchema.index({ team: 1 });

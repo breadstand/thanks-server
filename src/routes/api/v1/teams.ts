@@ -1,7 +1,9 @@
 import { Router } from "express"
+import { TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { createTeam, getUsersMemberships } from "../../../services/teams"
+import { availablePrizes, createPrize, createTeam, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
 import { getUser } from "../../../services/users"
+const Types = require('mongoose').Types
 
 export var teamRoutes = Router()
 
@@ -46,5 +48,79 @@ teamRoutes.post('/',async (req,res) => {
 })
 
 
+teamRoutes.get('/:id/prizes', async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+
+        // Only team members can see the prizes
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership) {
+            return res.json({
+                success: false,
+                error: "Unauthorized: You are not a member of this team.",
+                data: []
+            })
+        }
 
 
+        let prizes = await availablePrizes(teamid)
+        res.json({
+            success: true,
+            error: '',
+            data: prizes
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+
+teamRoutes.post('/:id/prizes',async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+        let prize:TeamPrize = req.body
+        console.log(prize)
+        let missingFields:string[] = []
+        if (!prize.team) { missingFields.push('team')}
+        if (!prize.createdBy) { missingFields.push('createdBy')}
+        if (!prize.name) { missingFields.push('name')}
+
+        if (missingFields.length) {
+            return res.json({
+                success: false,
+                error: 'Missing fields: '+missingFields.join(', '),
+                data: prize
+            })
+        }
+
+        if (String(prize.team) != String(teamid)) {
+            return res.json({
+                success: false,
+                error: `Team: ${prize.team} does not match url team: ${teamid}`,
+                data: prize
+            })
+        }
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership.owner) {
+            return res.json({
+                success: false,
+                error: 'You are not a team owner',
+                data: prize
+            })
+        }
+
+        let savedPrize = await createPrize(prize)
+        res.json({
+            success: true,
+            error: '',
+            data: savedPrize
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
