@@ -15,16 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteImageBuffer = exports.loadImageFromAWS = exports.saveImageToAWS = void 0;
 const aws_sdk_1 = require("aws-sdk");
 const sharp_1 = __importDefault(require("sharp"));
-function generateThumbnail(imageBuffer, width = null, height = null) {
-    let resize_params = {
-        height: 300
+function convertToJpeg(imageBuffer) {
+    var resize_params = {
+        width: 1500,
+        options: {
+            withoutEnlargement: true
+        }
     };
-    if (height) {
-        resize_params.height = height;
-    }
-    if (width) {
-        resize_params.width = width;
-    }
     return new Promise((resolve, reject) => {
         (0, sharp_1.default)(imageBuffer)
             .resize(resize_params)
@@ -38,9 +35,9 @@ function generateThumbnail(imageBuffer, width = null, height = null) {
         });
     });
 }
-function convertToJpeg(imageBuffer) {
+function resizeTo(imageBuffer, width) {
     var resize_params = {
-        width: 1500,
+        width: width,
         options: {
             withoutEnlargement: true
         }
@@ -81,15 +78,9 @@ function saveImageToAWS(key, buffer, options = { convertToJpeg: true, generateTh
         if (options.convertToJpeg) {
             jobs.push(convertToJpeg(buffer));
         }
-        if (options.generateThumbnail) {
-            jobs.push(generateThumbnail(buffer));
-        }
         let results = yield Promise.all(jobs);
         if (options.convertToJpeg) {
             bufferForAWS = results.shift();
-        }
-        if (options.generateThumbnail) {
-            thumbnailBufferForAWS = results.shift();
         }
         let s3 = new aws_sdk_1.S3();
         let saveImageJob = new Promise((resolve, reject) => {
@@ -108,35 +99,14 @@ function saveImageToAWS(key, buffer, options = { convertToJpeg: true, generateTh
             });
         });
         jobs.push(saveImageJob);
-        if (thumbnailBufferForAWS) {
-            let saveThumbnailJob = new Promise((resolve, reject) => {
-                let params = {
-                    Body: thumbnailBufferForAWS,
-                    Bucket: process.env.AWS_BUCKET_NAME,
-                    Key: key + '-thumb'
-                };
-                s3.putObject(params, function (err, data) {
-                    if (err) {
-                        reject(err);
-                    } // an error occurred
-                    else {
-                        resolve(true);
-                    }
-                });
-            });
-            jobs.push(saveThumbnailJob);
-        }
         return Promise.all(jobs);
     });
 }
 exports.saveImageToAWS = saveImageToAWS;
 // Size undefined by default.
 // size=='thumb' Loads the thumnail.
-function loadImageFromAWS(key, size = null) {
+function loadImageFromAWS(key, width = null) {
     // Load main image
-    if (size) {
-        key += '-' + size;
-    }
     var s3 = new aws_sdk_1.S3();
     return new Promise((resolve, reject) => {
         if (!process.env.AWS_BUCKET_NAME) {
@@ -146,12 +116,16 @@ function loadImageFromAWS(key, size = null) {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: key
         }, function (err, data) {
-            if (err) {
-                resolve(null);
-            }
-            else {
-                resolve(data.Body);
-            }
+            return __awaiter(this, void 0, void 0, function* () {
+                if (err) {
+                    resolve(null);
+                }
+                let image = data.Body;
+                if (width) {
+                    image = yield resizeTo(data.Body, width);
+                }
+                resolve(image);
+            });
         });
     });
 }

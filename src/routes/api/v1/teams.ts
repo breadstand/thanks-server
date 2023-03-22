@@ -81,7 +81,6 @@ teamRoutes.post('/:id/prizes',async (req,res) => {
     try {
         let teamid = new Types.ObjectId(req.params.id)
         let prize:TeamPrize = req.body
-        console.log(prize)
         let missingFields:string[] = []
         if (!prize.team) { missingFields.push('team')}
         if (!prize.createdBy) { missingFields.push('createdBy')}

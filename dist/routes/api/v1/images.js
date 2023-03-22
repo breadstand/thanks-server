@@ -69,7 +69,15 @@ exports.imageRoutes.post('/', upload.single('image'), (req, res) => __awaiter(vo
 exports.imageRoutes.get('/:image', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // image can be an image._id or image._id + '.jpg'
+        // image may also contain an optional width which is a dash
+        // 181230123123-123.jpg (the 123 is the width)
         let imageId = req.params.image.split('.')[0];
+        let imageIdPieces = imageId.split('-');
+        let width = null;
+        if (imageIdPieces.length > 1) {
+            imageId = imageIdPieces[0];
+            width = parseInt(imageIdPieces[1]);
+        }
         let image = yield image_1.StoredImageObject.findOne({
             _id: imageId,
             user: req.userId
@@ -77,7 +85,7 @@ exports.imageRoutes.get('/:image', (req, res) => __awaiter(void 0, void 0, void 
         if (!image) {
             throw "Image not found";
         }
-        let buffer = yield (0, images_1.loadImageFromAWS)(image.key);
+        let buffer = yield (0, images_1.loadImageFromAWS)(image.key, width);
         if (!buffer) {
             return res.status(500).send('Server error');
         }

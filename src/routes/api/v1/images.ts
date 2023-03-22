@@ -37,16 +37,26 @@ imageRoutes.post('/',
           data: null
         })
       }
-      const rawImage = await sharp(req.file.buffer)
+      const rawImage = await sharp(req.file.buffer).rotate()
       const metadata = await rawImage.metadata()
 
-      // Creat the image. Note: image will be converted to JPG in the
+      // width and height depend upon the orientation
+      let width = metadata.width
+      let height = metadata.height
+      // According to the EXIF orientation anything greater than 4 
+      // means the image is rotated 90 degrees CW or CCW
+      if (metadata.orientation && metadata.orientation > 4) {
+        width = metadata.height
+        height = metadata.width
+      }
+
+      // Create the image. Note: image will be converted to JPG in the
       // saveImageToAWS step.
       let image = new StoredImageObject({
         user: req.userId,
         mimetype: 'image/jpeg',
-        width: metadata.width,
-        height: metadata.height,
+        width: width,
+        height: height,
         originalname: req.file.originalname
       })
       image.key = 'image_' + image._id
@@ -66,8 +76,15 @@ imageRoutes.post('/',
 imageRoutes.get('/:image', async (req, res) => {
   try {
     // image can be an image._id or image._id + '.jpg'
+    // image may also contain an optional width which is a dash
+    // 181230123123-123.jpg (the 123 is the width)
     let imageId = req.params.image.split('.')[0]
-
+    let imageIdPieces = imageId.split('-')
+    let width:null|number = null
+    if (imageIdPieces.length > 1) {
+      imageId = imageIdPieces[0]
+      width = parseInt(imageIdPieces[1])
+    }
     let image = await StoredImageObject.findOne({
       _id: imageId,
       user: req.userId
@@ -75,10 +92,11 @@ imageRoutes.get('/:image', async (req, res) => {
     if (!image) {
       throw "Image not found"
     }
-    let buffer = await loadImageFromAWS(image.key)
+    let buffer = await loadImageFromAWS(image.key,width)
     if (!buffer) {
       return res.status(500).send('Server error')
     }
+
     res.contentType(image.mimetype);
     return res.send(buffer);
   } catch (e) {

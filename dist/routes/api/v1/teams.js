@@ -77,7 +77,6 @@ exports.teamRoutes.post('/:id/prizes', (req, res) => __awaiter(void 0, void 0, v
     try {
         let teamid = new Types.ObjectId(req.params.id);
         let prize = req.body;
-        console.log(prize);
         let missingFields = [];
         if (!prize.team) {
             missingFields.push('team');
