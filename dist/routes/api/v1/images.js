@@ -41,15 +41,24 @@ exports.imageRoutes.post('/', upload.single('image'), (req, res) => __awaiter(vo
                 data: null
             });
         }
-        const rawImage = yield (0, sharp_1.default)(req.file.buffer);
+        const rawImage = yield (0, sharp_1.default)(req.file.buffer).rotate();
         const metadata = yield rawImage.metadata();
-        // Creat the image. Note: image will be converted to JPG in the
+        // width and height depend upon the orientation
+        let width = metadata.width;
+        let height = metadata.height;
+        // According to the EXIF orientation anything greater than 4 
+        // means the image is rotated 90 degrees CW or CCW
+        if (metadata.orientation && metadata.orientation > 4) {
+            width = metadata.height;
+            height = metadata.width;
+        }
+        // Create the image. Note: image will be converted to JPG in the
         // saveImageToAWS step.
         let image = new image_1.StoredImageObject({
             user: req.userId,
             mimetype: 'image/jpeg',
-            width: metadata.width,
-            height: metadata.height,
+            width: width,
+            height: height,
             originalname: req.file.originalname
         });
         image.key = 'image_' + image._id;

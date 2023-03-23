@@ -102,7 +102,7 @@ membershipRoutes.put('/:id', async (req, res) => {
         // 1. The user is an owner and the membership is part of the team
         let member = await getMemberById(memberid)
         let usersMembership = await getMemberByUserId(member.team, req.userId)
-        if (usersMembership.owner) {
+        if (usersMembership?.owner) {
             authorized = true
         }
 
@@ -136,7 +136,7 @@ membershipRoutes.delete('/:id', async (req, res) => {
         // 1. The user is an owner and the membership is part of the team
         let member = await getMemberById(memberid)
         let usersMembership = await getMemberByUserId(member.team, req.userId)
-        if (usersMembership.owner) {
+        if (usersMembership?.owner) {
             authorized = true
         }
 

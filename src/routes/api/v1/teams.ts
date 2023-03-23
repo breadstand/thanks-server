@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createPrize, createTeam, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
+import { availablePrizes, createPrize, createTeam, deactivePrize, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
 import { getUser } from "../../../services/users"
 const Types = require('mongoose').Types
 
@@ -77,9 +77,9 @@ teamRoutes.get('/:id/prizes', async (req,res) => {
 
 
 
-teamRoutes.post('/:id/prizes',async (req,res) => {
+teamRoutes.post('/:teamid/prizes',async (req,res) => {
     try {
-        let teamid = new Types.ObjectId(req.params.id)
+        let teamid = new Types.ObjectId(req.params.teamid)
         let prize:TeamPrize = req.body
         let missingFields:string[] = []
         if (!prize.team) { missingFields.push('team')}
@@ -103,7 +103,7 @@ teamRoutes.post('/:id/prizes',async (req,res) => {
         }
 
         let usersMembership = await getMemberByUserId(teamid, req.userId)
-        if (!usersMembership.owner) {
+        if (!usersMembership?.owner) {
             return res.json({
                 success: false,
                 error: 'You are not a team owner',
@@ -116,6 +116,29 @@ teamRoutes.post('/:id/prizes',async (req,res) => {
             success: true,
             error: '',
             data: savedPrize
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+teamRoutes.delete('/:teamid/prizes/:prizeid',async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let prizeid = new Types.ObjectId(req.params.prizeid)
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        await deactivePrize(prizeid)
+        res.json({
+            success: true,
+            error: '',
+            data: {}
         })
 
     } catch (err) {

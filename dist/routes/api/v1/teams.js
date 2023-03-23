@@ -73,9 +73,9 @@ exports.teamRoutes.get('/:id/prizes', (req, res) => __awaiter(void 0, void 0, vo
         res.status(500).send('Internal server error');
     }
 }));
-exports.teamRoutes.post('/:id/prizes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.teamRoutes.post('/:teamid/prizes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let teamid = new Types.ObjectId(req.params.id);
+        let teamid = new Types.ObjectId(req.params.teamid);
         let prize = req.body;
         let missingFields = [];
         if (!prize.team) {
@@ -102,7 +102,7 @@ exports.teamRoutes.post('/:id/prizes', (req, res) => __awaiter(void 0, void 0, v
             });
         }
         let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
-        if (!usersMembership.owner) {
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.json({
                 success: false,
                 error: 'You are not a team owner',
@@ -114,6 +114,26 @@ exports.teamRoutes.post('/:id/prizes', (req, res) => __awaiter(void 0, void 0, v
             success: true,
             error: '',
             data: savedPrize
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.delete('/:teamid/prizes/:prizeid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let prizeid = new Types.ObjectId(req.params.prizeid);
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+            return res.status(401).send("Unauthorized: You are not a team owner");
+        }
+        yield (0, teams_1.deactivePrize)(prizeid);
+        res.json({
+            success: true,
+            error: '',
+            data: {}
         });
     }
     catch (err) {

@@ -99,7 +99,7 @@ exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, voi
         // 1. The user is an owner and the membership is part of the team
         let member = yield (0, teams_1.getMemberById)(memberid);
         let usersMembership = yield (0, teams_1.getMemberByUserId)(member.team, req.userId);
-        if (usersMembership.owner) {
+        if (usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner) {
             authorized = true;
         }
         // 2. This is the user's membership and they are active
@@ -131,7 +131,7 @@ exports.membershipRoutes.delete('/:id', (req, res) => __awaiter(void 0, void 0, 
         // 1. The user is an owner and the membership is part of the team
         let member = yield (0, teams_1.getMemberById)(memberid);
         let usersMembership = yield (0, teams_1.getMemberByUserId)(member.team, req.userId);
-        if (usersMembership.owner) {
+        if (usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner) {
             authorized = true;
         }
         if (authorized) {

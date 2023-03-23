@@ -290,7 +290,7 @@ function getMember(memberid:ObjectId):TeamMember {
 	}).populate('user');
 }
 
-export function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership {
+export function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership|null {
 	return MembershipObject.findOne({
 		team: teamid,
 		user: userid,
@@ -854,7 +854,7 @@ function awardPrizeTo(prizeid:ObjectId, memberid:ObjectId) {
 	});
 }
 
-function deactivePrize(prizeid:ObjectId) {
+export function deactivePrize(prizeid:ObjectId) {
 	return TeamPrizeObject.findByIdAndUpdate(prizeid, {
 		$set: {
 			active: false
