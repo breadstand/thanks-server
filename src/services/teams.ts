@@ -457,7 +457,7 @@ export async function notifyTeam(teamid:ObjectId, subject:string, body:string) {
 		});
 }
 
-async function notifyOwners(teamid:ObjectId, subject:string, body:string) {
+export async function notifyOwners(teamid:ObjectId, subject:string, body:string) {
 	await getOwners(teamid)
 		.then( members  => {
 			members.forEach(async member => {
@@ -467,7 +467,7 @@ async function notifyOwners(teamid:ObjectId, subject:string, body:string) {
 }
 
 
-function getTeam(teamid:ObjectId) {
+export async function getTeam(teamid:ObjectId):Promise<Team|null> {
 	return TeamObject.findById(teamid);
 }
 
@@ -815,20 +815,20 @@ export function createPrize(prize: TeamPrize) {
 	return p.save();
 }
 
-export async function availablePrizes(teamid:ObjectId) {
+export async function availablePrizes(teamid:ObjectId):Promise<TeamPrize[]> {
 	return TeamPrizeObject.find({
 		team: teamid,
-		awardedto: undefined,
+		awardedTo: { $exists: false},
 		active: true
 	}).sort({
 		name: 1
 	});
 }
 
-function nextAvailablePrize(teamid:ObjectId) {
+export async function nextAvailablePrize(teamid:ObjectId):Promise<TeamPrize|null> {
 	return TeamPrizeObject.findOne({
 		team: teamid,
-		awardedto: undefined,
+		awardedTo: undefined,
 		active: true
 	}).sort({
 		name: 1
@@ -843,11 +843,11 @@ function getPrize(prizeid:ObjectId) {
 	});
 }
 
-function awardPrizeTo(prizeid:ObjectId, memberid:ObjectId) {
+export function awardPrizeTo(prizeid:ObjectId, memberid:ObjectId) {
 	return TeamPrizeObject.findByIdAndUpdate(prizeid, {
 		$set: {
-			awardedto: memberid,
-			awardedon: new Date()
+			awardedTo: memberid,
+			awardedOn: new Date()
 		}
 	}, {
 		new: true

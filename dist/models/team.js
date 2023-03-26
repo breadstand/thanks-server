@@ -75,7 +75,7 @@ const teamPrizeSchema = new mongoose_1.Schema({
     name: String,
     description: String,
     price: Number,
-    awardedTo: { type: mongoose_1.Schema.Types.ObjectId, ref: 'user' },
+    awardedTo: { type: mongoose_1.Schema.Types.ObjectId, ref: 'membership' },
     awardedOn: Date,
     active: {
         type: Boolean,

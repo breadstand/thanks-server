@@ -121,6 +121,15 @@ exports.teamRoutes.post('/:teamid/prizes', (req, res) => __awaiter(void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
+exports.teamRoutes.get('/:teamid/pick-winners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.teamRoutes.delete('/:teamid/prizes/:prizeid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let teamid = new Types.ObjectId(req.params.teamid);

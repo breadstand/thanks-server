@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -442,9 +442,13 @@ function notifyOwners(teamid, subject, body) {
         });
     });
 }
+exports.notifyOwners = notifyOwners;
 function getTeam(teamid) {
-    return team_1.TeamObject.findById(teamid);
+    return __awaiter(this, void 0, void 0, function* () {
+        return team_1.TeamObject.findById(teamid);
+    });
 }
+exports.getTeam = getTeam;
 function getOwners(teamid) {
     return membership_1.MembershipObject.find({
         team: teamid,
@@ -784,14 +788,17 @@ function availablePrizes(teamid) {
 }
 exports.availablePrizes = availablePrizes;
 function nextAvailablePrize(teamid) {
-    return team_1.TeamPrizeObject.findOne({
-        team: teamid,
-        awardedto: undefined,
-        active: true
-    }).sort({
-        name: 1
+    return __awaiter(this, void 0, void 0, function* () {
+        return team_1.TeamPrizeObject.findOne({
+            team: teamid,
+            awardedTo: undefined,
+            active: true
+        }).sort({
+            name: 1
+        });
     });
 }
+exports.nextAvailablePrize = nextAvailablePrize;
 function getPrize(prizeid) {
     return team_1.TeamPrizeObject.findOne({
         _id: prizeid,
@@ -801,13 +808,14 @@ function getPrize(prizeid) {
 function awardPrizeTo(prizeid, memberid) {
     return team_1.TeamPrizeObject.findByIdAndUpdate(prizeid, {
         $set: {
-            awardedto: memberid,
-            awardedon: new Date()
+            awardedTo: memberid,
+            awardedOn: new Date()
         }
     }, {
         new: true
     });
 }
+exports.awardPrizeTo = awardPrizeTo;
 function deactivePrize(prizeid) {
     return team_1.TeamPrizeObject.findByIdAndUpdate(prizeid, {
         $set: {

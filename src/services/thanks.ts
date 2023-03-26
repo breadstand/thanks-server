@@ -1,25 +1,33 @@
 import { ObjectId } from "mongoose";
-import { ThanksPost, ThanksPostDetailed, ThanksPostObject } from "../models/thankspost";
-import { getBounty, incrementIdeaCount, incrementReceivedCount, incrementSentCount, notifyTeam } from "./teams";
+import { Membership } from "../models/membership";
+import { Team, TeamPrize } from "../models/team";
+import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject } from "../models/thankspost";
+import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyOwners, notifyTeam } from "./teams";
 
 
-function sanitizeFor(postfor:string,size=280) {
+export interface DateRange {
+	start: Date,
+	end: Date,
+	monthsCovered: number
+}
+
+function sanitizeFor(postfor: string, size = 280) {
 	if (!postfor) {
 		return '';
 	}
-	return postfor.slice(0,280).trim();
+	return postfor.slice(0, 280).trim();
 }
 
 export function createThanksPost(newPost: ThanksPost) {
 	var thankspost = new ThanksPostObject(newPost);
 	return thankspost.save()
-		.then( (thankspost:ThanksPost) => {
+		.then((thankspost: ThanksPost) => {
 			if (thankspost.postType == 'thanks') {
 				sendToTeam(thankspost._id);
 				return Promise.all([
 					incrementSentCount(thankspost.createdBy as ObjectId),
 					incrementReceivedCount(thankspost.thanksTo as ObjectId)
-				]);	
+				]);
 			} else {
 				incrementIdeaCount(thankspost.createdBy as ObjectId)
 			}
@@ -28,7 +36,7 @@ export function createThanksPost(newPost: ThanksPost) {
 		});
 };
 
-function sendToTeam(thanksid:ObjectId) {
+function sendToTeam(thanksid: ObjectId) {
 	console.log('sendToTeam()')
 	return ThanksPostObject.findById(thanksid)
 		.populate({
@@ -37,8 +45,8 @@ function sendToTeam(thanksid:ObjectId) {
 		.populate({
 			path: "thanksTo"
 		})
-		.then( (thankspost:any) => {
-			if (!thankspost || !thankspost.thanksTo || !thankspost.createdBy ) {
+		.then((thankspost: any) => {
+			if (!thankspost || !thankspost.thanksTo || !thankspost.createdBy) {
 				return;
 			}
 			if (thankspost.postType != 'thanks') {
@@ -54,11 +62,11 @@ function sendToTeam(thanksid:ObjectId) {
 
 
 
-export function getThanksPosts(teamid:ObjectId,filter:any) {
+export function getThanksPosts(teamid: ObjectId, filter: any) {
 
 	var count = 20;
 
-	var query:any = {
+	var query: any = {
 		team: teamid,
 		active: true
 	};
@@ -71,10 +79,10 @@ export function getThanksPosts(teamid:ObjectId,filter:any) {
 		}
 		if (filter.posttype == 'idea' || filter.posttype == 'thanks') {
 			query.posttype = filter.posttype;
-		} 
+		}
 		if (filter.winner !== undefined) {
 			query.winner = filter.winner;
-		}	
+		}
 		if (filter.from) {
 			query.from = filter.from;
 		}
@@ -82,7 +90,7 @@ export function getThanksPosts(teamid:ObjectId,filter:any) {
 			query.to = filter.to;
 		}
 		if (filter.bounty) {
-			query.approved_bounties =  {
+			query.approved_bounties = {
 				$elemMatch: {
 					$eq: filter.bounty
 				}
@@ -135,50 +143,53 @@ async function removeBounty(postid,bountyid) {
 }
 
 
+*/
 
-async function figureOutDateRange(team, now) {
+
+async function figureOutDateRange(team: Team, now: Date = new Date()) {
 	/*
-	    The goal of this is to figure out the date range to select a 
-	    winning thanks from. Basically this is the dates of the set.
-	    1.  The start of the date range should be one second past the end
-	        of the last set. If there is no last set, then when the team was
-	        created.
-	    2.  The end of the set should be last day of the previous month.
-	    3   All times will be in UTC (members of teams might be all over
-	        it's just easier)
-	*//*
-	var daterange = {};
-	if (!now) {
-		now = new Date();
-	}
+		The goal of this is to figure out the date range to select a 
+		winning thanks from. Basically this is the dates of the set.
+		1.  The start of the date range should be one second past the end
+			of the last set. If there is no last set, then when the team was
+			created.
+		2.  The end of the set should be last day of the previous month.
+		3   All times will be in UTC (members of teams might be all over
+			it's just easier)
+	*/
 
-	daterange.start = team.created;
+	let daterange: DateRange = {
+		start: team.created,
+		end: now,
+		monthsCovered: 1
+	};
 
-	var mostRecentSets = await ThanksSet.find({
+
+	let mostRecentSet: ThanksSet[] = await ThanksSetObject.find({
 		team: team._id
 	}).limit(1).sort({
 		_id: -1
 	});
 
-	if (mostRecentSets.length > 0) {
-		var lastset = mostRecentSets[0];
-		let lastsetenddate = lastset.end;
+	if (mostRecentSet.length > 0) {
+		let lastset = mostRecentSet[0];
+		let lastsetenddate = lastset.endDate;
 		daterange.start = new Date(Date.UTC(lastsetenddate.getUTCFullYear(), lastsetenddate.getUTCMonth(), lastsetenddate.getUTCDate() + 1, 0, 0, 0, 0));
 	}
 
 	// The end of the date range will always be the last of the previous month. 
 	daterange.end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
-	// If the team is too new, the end date will be in the previous month.
+	// If the team is too new, the end date will be today.
 	if (daterange.end < daterange.start) {
-		return null;
+		daterange.end = now
 	}
 
 	// Determine months covered (months have different numbers of days)
 	// The end will also be the last day of the month. 
-	// If the startdate is 1st a given month then it's considered a full month.
+	// If the startdate is the 1st of a given month then it's considered a full month.
 	// It it's not the 1st then that month is a partial.
 	if (daterange.start.getUTCDate() == 1) {
-		// In order to figure out the months convered we have to compare from the begging
+		// In order to figure out the months convered we have to compare from the begining
 		// of the range. For example if the start is Nov 1 and end is Nov 30 then 
 		// then endmonth(11) - beggingofmonth(11) = 0 which means no months covered, even though
 		// it's a full month. To fix this, we calculate the firstday of this month (which is the
@@ -196,8 +207,8 @@ async function figureOutDateRange(team, now) {
 	return daterange;
 }
 
-async function getMostRecentSet(teamid) {
-	var recentsets = await ThanksSet.find({
+async function getMostRecentSet(teamid: ObjectId): Promise<ThanksSet | null> {
+	var recentsets = await ThanksSetObject.find({
 		team: teamid
 	}).sort({
 		_id: -1
@@ -205,47 +216,41 @@ async function getMostRecentSet(teamid) {
 	return recentsets[0];
 }
 
-async function notifyTeamOfWinners(teamid) {
+async function notifyTeamOfWinners(teamid: ObjectId) {
 	var lastset = await getMostRecentSet(teamid);
+	if (!lastset) {
+		console.log("Warning: getMostRecentSet() returned null")
+		return
+	}
 	var winners = await getWinners(lastset._id);
 
 	for (var i = 0; i < winners.length; i++) {
 		var message = "We just picked a th8nks winner! ";
 
-		let from = winners[i].from;
-		var fromname = from.name;
-		if (fromname != from.email) {
-			if (from.email) {
-				fromname += ` (${from.email})`;
-			}
+		let createdBy = winners[i].createdBy as Membership;
+		if (!createdBy) {
+			continue;
 		}
+		let thanksTo = winners[i].thanksTo as Membership;
 
-		let to = winners[i].to;
-		var toname = to.name;
-		if (toname != to.email) {
-			if (to.email) {
-				toname += ` (${to.email})`;
-			} else if (to.phone) {
-				toname += ` (${to.phone})`;
-			}
+		message += `${thanksTo.name} for ${winners[i].thanksFor} [from: ${createdBy.name}]`;
+		let prize = winners[i].prize as TeamPrize
+		if (prize?.name) {
+			message += " Prize: " + prize.name;
 		}
-		message += `${toname} for ${winners[i].for} [from: ${fromname}]`;
-		if (winners[i].prize && winners[i].prize.name) {
-			message += " Prize: " + winners[i].prize.name;
-		}
-		await teams.notifyTeam(teamid, "Thanks Winner Picked", message);
+		await notifyTeam(teamid, "Thanks Winner Picked", message);
 	}
 }
 
-async function createSet(teamid,start,end) {
-	var set = new ThanksSet({
+async function createSet(teamid: ObjectId, start: Date, end: Date) {
+	var set = new ThanksSetObject({
 		team: teamid,
-		start: start,
-		end: end
+		startDate: start,
+		endDate: end
 	});
 	await set.save();
 	return set;
-} */
+}
 /*
 function updateSet(setid,update) {
 	return ThanksSet.findByIdAndUpdate(setid,{
@@ -260,95 +265,95 @@ function getSet(setid) {
 function deleteSet(setid) {
 	return ThanksSet.findByIdAndDelete(setid);
 }
-
-async function makePostAWinner(postid,setid) {
-	var thankspost = await ThanksPost.findById(postid);
-	var prize = await teams.nextAvailablePrize(thankspost.team);
-	await teams.awardPrizeTo(prize._id, thankspost.to);
+*/
+async function makePostAWinner(postid: ObjectId, setid: ObjectId) {
+	var thankspost = await ThanksPostObject.findById(postid);
+	if (!thankspost) {
+		return
+	}
+	var prize = await nextAvailablePrize(thankspost.team);
+	if (!prize) {
+		return
+	}
+	await awardPrizeTo(prize._id, thankspost.thanksTo as ObjectId);
 	thankspost.winner = true;
-	thankspost.thanks_set = setid;
+	thankspost.thanksSet = setid;
 	thankspost.prize = prize._id;
 	await thankspost.save();
 }
 
-async function pickTeamWinners(teamid) {
-	var prizecount = 0;
-	var team = await teams.getTeam(teamid);
 
-	// Step 1: Figure out if winners should be picked.
-	// Basically, we pick once a month and if a month hasn't passed
-	// we shoudln't pick any winners.
-	let numberOfMonths = 1;
-	// Figure out which month/date rane to pick winners for
-	var daterange = await figureOutDateRange(team);
-	if (!daterange || daterange.monthsCovered < numberOfMonths) {
-		return null;
-	}
-
-	// Step 2: Figure out what prizes are available.
-	// The number of prizes tells us how many winners to pick.
-	var availablePrizes = await teams.availablePrizes(teamid);
-	var prizecount = availablePrizes.length;
-	if (!prizecount) {
-		teams.notifyOwners(teamid, "No Prizes Selected",
-			"Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-			"To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
-		return null;
-		//throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
-	}
-
-	// Step 3: Create a new set
-	var set = await createSet(teamid,daterange.start,daterange.end);
-
-	// Step 4: Find thanksposts within that daterange
-	var winningThanks = await ThanksPost.aggregate([{
-		$match: {
-			team: teamid,
-			created: {
-				$gte: set.start,
-				$lt: set.end
-			},
-			active: true,
-			$or: [{
-					posttype: 'thanks'
-				},
-				{
-					posttype: undefined
-				}
-			]
+export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1): Promise<ThanksSet|null> {
+		let prizecount = 0;
+		let team = await getTeam(teamid);
+		if (!team) {
+			throw "Team not found: " + teamid
+			return null
 		}
-	}]).sample(prizecount);
+		// Step 1: Figure out if winners should be picked.
+		// Basically, we pick once a month and if a month hasn't passed
+		// we shouldn't pick any winners.
 
-	// Step 5: Award prizes to those winners
-	for (var i = 0; i < winningThanks.length; i++) {
-		await makePostAWinner(winningThanks[i]._id,set._id);
-	}
+		// Figure out which month/date rane to pick winners for
+		var daterange = await figureOutDateRange(team);
+		if (!daterange || daterange.monthsCovered < numberOfMonths) {
+			return null;
+		}
+		// Step 2: Figure out what prizes are available.
+		// The number of prizes tells us how many winners to pick.
+		let prizes = await availablePrizes(teamid);
+		prizecount = prizes.length;
+		if (!prizecount) {
+			notifyOwners(teamid, "No Prizes Selected",
+				"Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
+				"To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
+			return null;
+			//throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
+		}
+		// Step 3: Create a new set
+		var set = await createSet(teamid, daterange.start, daterange.end);
+		// Step 4: Find thanksposts within that daterange
+		var winningThanks = await ThanksPostObject.aggregate([{
+			$match: {
+				team: teamid,
+				created: {
+					$gte: set.startDate,
+					$lt: set.endDate
+				},
+				active: true,
+				postType: 'thanks'
+			}
+		}]).sample(prizecount);
 
-	await notifyTeamOfWinners(teamid);
-	return winningThanks.length;
+		// Step 5: Award prizes to those winners
+		for (var i = 0; i < winningThanks.length; i++) {
+			await makePostAWinner(winningThanks[i]._id, set._id);
+		}
+
+		notifyTeamOfWinners(teamid);
+		return set
 }
 
 
+async function getWinners(setid: ObjectId): Promise<ThanksPost[]> {
 
-async function getWinners(setid) {
-
-	return ThanksPost.find({
-			thanks_set: setid
-		})
+	return ThanksPostObject.find({
+		thanksSet: setid
+	})
 		.populate({
-			path: 'to'
+			path: 'thanksTo'
 		})
 		.populate({
 			path: 'prize'
 		})
 		.populate({
-			path: 'from'
+			path: 'createdBy'
 		})
 		.sort({
 			_id: -1
 		});
 }
-
+/*
 
 
 async function pickWinners() {
@@ -601,8 +606,8 @@ function updatePost(postid, update) {
 
 */
 
-export async function deactivatePost(postid:ObjectId):Promise<ThanksPost|null> {
-	var post = await ThanksPostObject.findByIdAndUpdate(postid,{
+export async function deactivatePost(postid: ObjectId): Promise<ThanksPost | null> {
+	var post = await ThanksPostObject.findByIdAndUpdate(postid, {
 		$set: {
 			active: false
 		}
@@ -613,12 +618,12 @@ export async function deactivatePost(postid:ObjectId):Promise<ThanksPost|null> {
 		return null
 	}
 
-	if (post.postType='idea') {
-		incrementIdeaCount(post.createdBy as ObjectId,-1);
+	if (post.postType = 'idea') {
+		incrementIdeaCount(post.createdBy as ObjectId, -1);
 	}
 	else {
-		incrementReceivedCount(post.thanksTo as ObjectId,-1);
-		incrementSentCount(post.createdBy as ObjectId,-1);
+		incrementReceivedCount(post.thanksTo as ObjectId, -1);
+		incrementSentCount(post.createdBy as ObjectId, -1);
 	}
 	return post;
 }

@@ -1,8 +1,10 @@
 import { model, ObjectId, Schema } from "mongoose";
 import { Membership } from "./membership";
+import { TeamPrize } from "./team";
 
 
 export interface ThanksSet {
+    _id: ObjectId,
     created: Date,
     team: ObjectId,    
     startDate: Date,
@@ -42,7 +44,7 @@ export interface ThanksPost {
     idea: String,
     thanksSet: ObjectId,
     winner: boolean,
-    prize: ObjectId,
+    prize: ObjectId | TeamPrize,
     active: boolean,
     postType: string,
 }

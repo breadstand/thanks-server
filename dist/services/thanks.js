@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.getThanksPosts = exports.createThanksPost = void 0;
+exports.deactivatePost = exports.pickTeamWinners = exports.getThanksPosts = exports.createThanksPost = void 0;
 const thankspost_1 = require("../models/thankspost");
 const teams_1 = require("./teams");
 function sanitizeFor(postfor, size = 280) {
@@ -139,117 +139,108 @@ async function removeBounty(postid,bountyid) {
 }
 
 
-
-async function figureOutDateRange(team, now) {
-    /*
-        The goal of this is to figure out the date range to select a
-        winning thanks from. Basically this is the dates of the set.
-        1.  The start of the date range should be one second past the end
-            of the last set. If there is no last set, then when the team was
-            created.
-        2.  The end of the set should be last day of the previous month.
-        3   All times will be in UTC (members of teams might be all over
-            it's just easier)
-    */ /*
-var daterange = {};
-if (!now) {
-    now = new Date();
-}
-
-daterange.start = team.created;
-
-var mostRecentSets = await ThanksSet.find({
-    team: team._id
-}).limit(1).sort({
-    _id: -1
-});
-
-if (mostRecentSets.length > 0) {
-    var lastset = mostRecentSets[0];
-    let lastsetenddate = lastset.end;
-    daterange.start = new Date(Date.UTC(lastsetenddate.getUTCFullYear(), lastsetenddate.getUTCMonth(), lastsetenddate.getUTCDate() + 1, 0, 0, 0, 0));
-}
-
-// The end of the date range will always be the last of the previous month.
-daterange.end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
-// If the team is too new, the end date will be in the previous month.
-if (daterange.end < daterange.start) {
-    return null;
-}
-
-// Determine months covered (months have different numbers of days)
-// The end will also be the last day of the month.
-// If the startdate is 1st a given month then it's considered a full month.
-// It it's not the 1st then that month is a partial.
-if (daterange.start.getUTCDate() == 1) {
-    // In order to figure out the months convered we have to compare from the begging
-    // of the range. For example if the start is Nov 1 and end is Nov 30 then
-    // then endmonth(11) - beggingofmonth(11) = 0 which means no months covered, even though
-    // it's a full month. To fix this, we calculate the firstday of this month (which is the
-    // day after the end date).
-    var firstofmonth = now;
-    firstofmonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-
-    daterange.monthsCovered = (firstofmonth.getUTCFullYear() * 12 + firstofmonth.getUTCMonth()) -
-        (daterange.start.getUTCFullYear() * 12 + daterange.start.getUTCMonth());
-} else {
-    // In this case it will be something like: Oct 12 - Nov 30. Which is one month covered.
-    daterange.monthsCovered = (daterange.end.getUTCFullYear() * 12 + daterange.end.getUTCMonth()) -
-        (daterange.start.getUTCFullYear() * 12 + daterange.start.getUTCMonth());
-}
-return daterange;
-}
-
-async function getMostRecentSet(teamid) {
-var recentsets = await ThanksSet.find({
-    team: teamid
-}).sort({
-    _id: -1
-}).limit(1);
-return recentsets[0];
-}
-
-async function notifyTeamOfWinners(teamid) {
-var lastset = await getMostRecentSet(teamid);
-var winners = await getWinners(lastset._id);
-
-for (var i = 0; i < winners.length; i++) {
-    var message = "We just picked a th8nks winner! ";
-
-    let from = winners[i].from;
-    var fromname = from.name;
-    if (fromname != from.email) {
-        if (from.email) {
-            fromname += ` (${from.email})`;
+*/
+function figureOutDateRange(team, now = new Date()) {
+    return __awaiter(this, void 0, void 0, function* () {
+        /*
+            The goal of this is to figure out the date range to select a
+            winning thanks from. Basically this is the dates of the set.
+            1.  The start of the date range should be one second past the end
+                of the last set. If there is no last set, then when the team was
+                created.
+            2.  The end of the set should be last day of the previous month.
+            3   All times will be in UTC (members of teams might be all over
+                it's just easier)
+        */
+        let daterange = {
+            start: team.created,
+            end: now,
+            monthsCovered: 1
+        };
+        let mostRecentSet = yield thankspost_1.ThanksSetObject.find({
+            team: team._id
+        }).limit(1).sort({
+            _id: -1
+        });
+        if (mostRecentSet.length > 0) {
+            let lastset = mostRecentSet[0];
+            let lastsetenddate = lastset.endDate;
+            daterange.start = new Date(Date.UTC(lastsetenddate.getUTCFullYear(), lastsetenddate.getUTCMonth(), lastsetenddate.getUTCDate() + 1, 0, 0, 0, 0));
         }
-    }
-
-    let to = winners[i].to;
-    var toname = to.name;
-    if (toname != to.email) {
-        if (to.email) {
-            toname += ` (${to.email})`;
-        } else if (to.phone) {
-            toname += ` (${to.phone})`;
+        // The end of the date range will always be the last of the previous month. 
+        daterange.end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
+        // If the team is too new, the end date will be in the previous month.
+        if (daterange.end < daterange.start) {
+            return null;
         }
-    }
-    message += `${toname} for ${winners[i].for} [from: ${fromname}]`;
-    if (winners[i].prize && winners[i].prize.name) {
-        message += " Prize: " + winners[i].prize.name;
-    }
-    await teams.notifyTeam(teamid, "Thanks Winner Picked", message);
+        // Determine months covered (months have different numbers of days)
+        // The end will also be the last day of the month. 
+        // If the startdate is 1st a given month then it's considered a full month.
+        // It it's not the 1st then that month is a partial.
+        if (daterange.start.getUTCDate() == 1) {
+            // In order to figure out the months convered we have to compare from the begging
+            // of the range. For example if the start is Nov 1 and end is Nov 30 then 
+            // then endmonth(11) - beggingofmonth(11) = 0 which means no months covered, even though
+            // it's a full month. To fix this, we calculate the firstday of this month (which is the
+            // day after the end date).
+            var firstofmonth = now;
+            firstofmonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+            daterange.monthsCovered = (firstofmonth.getUTCFullYear() * 12 + firstofmonth.getUTCMonth()) -
+                (daterange.start.getUTCFullYear() * 12 + daterange.start.getUTCMonth());
+        }
+        else {
+            // In this case it will be something like: Oct 12 - Nov 30. Which is one month covered.
+            daterange.monthsCovered = (daterange.end.getUTCFullYear() * 12 + daterange.end.getUTCMonth()) -
+                (daterange.start.getUTCFullYear() * 12 + daterange.start.getUTCMonth());
+        }
+        return daterange;
+    });
 }
+function getMostRecentSet(teamid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var recentsets = yield thankspost_1.ThanksSetObject.find({
+            team: teamid
+        }).sort({
+            _id: -1
+        }).limit(1);
+        return recentsets[0];
+    });
 }
-
-async function createSet(teamid,start,end) {
-var set = new ThanksSet({
-    team: teamid,
-    start: start,
-    end: end
-});
-await set.save();
-return set;
-} */
+function notifyTeamOfWinners(teamid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var lastset = yield getMostRecentSet(teamid);
+        if (!lastset) {
+            console.log("Warning: getMostRecentSet() returned null");
+            return;
+        }
+        var winners = yield getWinners(lastset._id);
+        for (var i = 0; i < winners.length; i++) {
+            var message = "We just picked a th8nks winner! ";
+            let createdBy = winners[i].createdBy;
+            if (!createdBy) {
+                continue;
+            }
+            let thanksTo = winners[i].thanksTo;
+            message += `${thanksTo.name} for ${winners[i].thanksFor} [from: ${createdBy.name}]`;
+            let prize = winners[i].prize;
+            if (prize === null || prize === void 0 ? void 0 : prize.name) {
+                message += " Prize: " + prize.name;
+            }
+            yield (0, teams_1.notifyTeam)(teamid, "Thanks Winner Picked", message);
+        }
+    });
+}
+function createSet(teamid, start, end) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var set = new thankspost_1.ThanksSetObject({
+            team: teamid,
+            startDate: start,
+            endDate: end
+        });
+        yield set.save();
+        return set;
+    });
+}
 /*
 function updateSet(setid,update) {
     return ThanksSet.findByIdAndUpdate(setid,{
@@ -264,95 +255,94 @@ function getSet(setid) {
 function deleteSet(setid) {
     return ThanksSet.findByIdAndDelete(setid);
 }
-
-async function makePostAWinner(postid,setid) {
-    var thankspost = await ThanksPost.findById(postid);
-    var prize = await teams.nextAvailablePrize(thankspost.team);
-    await teams.awardPrizeTo(prize._id, thankspost.to);
-    thankspost.winner = true;
-    thankspost.thanks_set = setid;
-    thankspost.prize = prize._id;
-    await thankspost.save();
-}
-
-async function pickTeamWinners(teamid) {
-    var prizecount = 0;
-    var team = await teams.getTeam(teamid);
-
-    // Step 1: Figure out if winners should be picked.
-    // Basically, we pick once a month and if a month hasn't passed
-    // we shoudln't pick any winners.
-    let numberOfMonths = 1;
-    // Figure out which month/date rane to pick winners for
-    var daterange = await figureOutDateRange(team);
-    if (!daterange || daterange.monthsCovered < numberOfMonths) {
-        return null;
-    }
-
-    // Step 2: Figure out what prizes are available.
-    // The number of prizes tells us how many winners to pick.
-    var availablePrizes = await teams.availablePrizes(teamid);
-    var prizecount = availablePrizes.length;
-    if (!prizecount) {
-        teams.notifyOwners(teamid, "No Prizes Selected",
-            "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-            "To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
-        return null;
-        //throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
-    }
-
-    // Step 3: Create a new set
-    var set = await createSet(teamid,daterange.start,daterange.end);
-
-    // Step 4: Find thanksposts within that daterange
-    var winningThanks = await ThanksPost.aggregate([{
-        $match: {
-            team: teamid,
-            created: {
-                $gte: set.start,
-                $lt: set.end
-            },
-            active: true,
-            $or: [{
-                    posttype: 'thanks'
-                },
-                {
-                    posttype: undefined
-                }
-            ]
+*/
+function makePostAWinner(postid, setid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var thankspost = yield thankspost_1.ThanksPostObject.findById(postid);
+        if (!thankspost) {
+            return;
         }
-    }]).sample(prizecount);
-
-    // Step 5: Award prizes to those winners
-    for (var i = 0; i < winningThanks.length; i++) {
-        await makePostAWinner(winningThanks[i]._id,set._id);
-    }
-
-    await notifyTeamOfWinners(teamid);
-    return winningThanks.length;
+        var prize = yield (0, teams_1.nextAvailablePrize)(thankspost.team);
+        if (!prize) {
+            return;
+        }
+        yield (0, teams_1.awardPrizeTo)(prize._id, thankspost.thanksTo);
+        thankspost.winner = true;
+        thankspost.thanksSet = setid;
+        thankspost.prize = prize._id;
+        yield thankspost.save();
+    });
 }
-
-
-
-async function getWinners(setid) {
-
-    return ThanksPost.find({
-            thanks_set: setid
+function pickTeamWinners(teamid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let prizecount = 0;
+        let team = yield (0, teams_1.getTeam)(teamid);
+        if (!team) {
+            throw "Team not found: " + teamid;
+            return;
+        }
+        // Step 1: Figure out if winners should be picked.
+        // Basically, we pick once a month and if a month hasn't passed
+        // we shouldn't pick any winners.
+        let numberOfMonths = 1;
+        // Figure out which month/date rane to pick winners for
+        var daterange = yield figureOutDateRange(team);
+        if (!daterange || daterange.monthsCovered < numberOfMonths) {
+            return null;
+        }
+        // Step 2: Figure out what prizes are available.
+        // The number of prizes tells us how many winners to pick.
+        let prizes = yield (0, teams_1.availablePrizes)(teamid);
+        prizecount = prizes.length;
+        if (!prizecount) {
+            (0, teams_1.notifyOwners)(teamid, "No Prizes Selected", "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
+                "To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
+            return null;
+            //throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
+        }
+        // Step 3: Create a new set
+        var set = yield createSet(teamid, daterange.start, daterange.end);
+        // Step 4: Find thanksposts within that daterange
+        var winningThanks = yield thankspost_1.ThanksPostObject.aggregate([{
+                $match: {
+                    team: teamid,
+                    created: {
+                        $gte: set.startDate,
+                        $lt: set.endDate
+                    },
+                    active: true,
+                    postType: 'thanks'
+                }
+            }]).sample(prizecount);
+        // Step 5: Award prizes to those winners
+        for (var i = 0; i < winningThanks.length; i++) {
+            yield makePostAWinner(winningThanks[i]._id, set._id);
+        }
+        yield notifyTeamOfWinners(teamid);
+        return winningThanks.length;
+    });
+}
+exports.pickTeamWinners = pickTeamWinners;
+function getWinners(setid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return thankspost_1.ThanksPostObject.find({
+            thanksSet: setid
         })
-        .populate({
-            path: 'to'
+            .populate({
+            path: 'thanksTo'
         })
-        .populate({
+            .populate({
             path: 'prize'
         })
-        .populate({
-            path: 'from'
+            .populate({
+            path: 'createdBy'
         })
-        .sort({
+            .sort({
             _id: -1
         });
+    });
 }
-
+/*
 
 
 async function pickWinners() {
