@@ -2,7 +2,7 @@ import { ConnectContactLens } from "aws-sdk";
 import { AnyARecord } from "dns";
 import { ObjectId } from "mongoose";
 import { Membership, MembershipContact, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
-import { Team, TeamObject, TeamBountyObject, TeamPrizeObject, TeamPrize } from "../models/team";
+import { Team, TeamObject, TeamBountyObject, TeamPrizeObject, TeamPrize, TeamBounty } from "../models/team";
 import { User, UserContact, UserObject } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
@@ -580,16 +580,12 @@ async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
 	return [imported, rejected];
 }
 
-function createBounty(teamid:ObjectId, name:string, amount:number) {
-	var bounty = new TeamBountyObject({
-		team: teamid,
-		name: sanitizeName(name),
-		amount: amount
-	});
-	return bounty.save();
+export function createBounty(bounty: TeamBounty) {
+	let bountyObject = new TeamBountyObject(bounty);
+	return bountyObject.save();
 };
 
-function getBounties(teamid:ObjectId,active:boolean|null=true) {
+export function getBounties(teamid:ObjectId,active:boolean|null=true) {
 	var query = {
 		team: teamid,
 		active: active

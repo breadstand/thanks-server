@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -546,14 +546,11 @@ function importMembers(teamid, owner, text) {
         return [imported, rejected];
     });
 }
-function createBounty(teamid, name, amount) {
-    var bounty = new team_1.TeamBountyObject({
-        team: teamid,
-        name: (0, utils_1.sanitizeName)(name),
-        amount: amount
-    });
-    return bounty.save();
+function createBounty(bounty) {
+    let bountyObject = new team_1.TeamBountyObject(bounty);
+    return bountyObject.save();
 }
+exports.createBounty = createBounty;
 ;
 function getBounties(teamid, active = true) {
     var query = {
@@ -565,6 +562,7 @@ function getBounties(teamid, active = true) {
         name: 1
     });
 }
+exports.getBounties = getBounties;
 function getBounty(bountyid) {
     return team_1.TeamBountyObject.findById(bountyid);
 }
@@ -779,7 +777,7 @@ function availablePrizes(teamid) {
     return __awaiter(this, void 0, void 0, function* () {
         return team_1.TeamPrizeObject.find({
             team: teamid,
-            awardedto: undefined,
+            awardedTo: { $exists: false },
             active: true
         }).sort({
             name: 1

@@ -68,9 +68,11 @@ const teamSchema = new Schema<Team>({
 export const TeamObject = model('team',teamSchema);
 
 export interface TeamBounty {
+    createdBy: ObjectId,
     created: Date,
     team: ObjectId,    
     name: String,
+    description: String,
     amount: Number,
     active: {
         type: Boolean,
@@ -88,7 +90,12 @@ const teamBountySchema = new Schema<TeamBounty>({
         type: Schema.Types.ObjectId, 
         ref: 'team'
     },    
+    createdBy: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'membership'
+    },    
     name: String,
+    description: String,
     amount: Number,
     active: {
         type: Boolean,

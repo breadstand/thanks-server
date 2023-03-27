@@ -55,7 +55,12 @@ const teamBountySchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'team'
     },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'membership'
+    },
     name: String,
+    description: String,
     amount: Number,
     active: {
         type: Boolean,

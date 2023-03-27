@@ -169,16 +169,16 @@ function figureOutDateRange(team, now = new Date()) {
         }
         // The end of the date range will always be the last of the previous month. 
         daterange.end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
-        // If the team is too new, the end date will be in the previous month.
+        // If the team is too new, the end date will be today.
         if (daterange.end < daterange.start) {
-            return null;
+            daterange.end = now;
         }
         // Determine months covered (months have different numbers of days)
         // The end will also be the last day of the month. 
-        // If the startdate is 1st a given month then it's considered a full month.
+        // If the startdate is the 1st of a given month then it's considered a full month.
         // It it's not the 1st then that month is a partial.
         if (daterange.start.getUTCDate() == 1) {
-            // In order to figure out the months convered we have to compare from the begging
+            // In order to figure out the months convered we have to compare from the begining
             // of the range. For example if the start is Nov 1 and end is Nov 30 then 
             // then endmonth(11) - beggingofmonth(11) = 0 which means no months covered, even though
             // it's a full month. To fix this, we calculate the firstday of this month (which is the
@@ -273,18 +273,17 @@ function makePostAWinner(postid, setid) {
         yield thankspost.save();
     });
 }
-function pickTeamWinners(teamid) {
+function pickTeamWinners(teamid, numberOfMonths = 1) {
     return __awaiter(this, void 0, void 0, function* () {
         let prizecount = 0;
         let team = yield (0, teams_1.getTeam)(teamid);
         if (!team) {
             throw "Team not found: " + teamid;
-            return;
+            return null;
         }
         // Step 1: Figure out if winners should be picked.
         // Basically, we pick once a month and if a month hasn't passed
         // we shouldn't pick any winners.
-        let numberOfMonths = 1;
         // Figure out which month/date rane to pick winners for
         var daterange = yield figureOutDateRange(team);
         if (!daterange || daterange.monthsCovered < numberOfMonths) {
@@ -318,8 +317,8 @@ function pickTeamWinners(teamid) {
         for (var i = 0; i < winningThanks.length; i++) {
             yield makePostAWinner(winningThanks[i]._id, set._id);
         }
-        yield notifyTeamOfWinners(teamid);
-        return winningThanks.length;
+        notifyTeamOfWinners(teamid);
+        return set;
     });
 }
 exports.pickTeamWinners = pickTeamWinners;

@@ -1,7 +1,7 @@
 import { Router } from "express"
-import { TeamPrize } from "../../../models/team"
+import { TeamBounty, TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createPrize, createTeam, deactivePrize, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
+import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, getBounties, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
 import { pickTeamWinners } from "../../../services/thanks"
 import { getUser } from "../../../services/users"
 const Types = require('mongoose').Types
@@ -164,6 +164,72 @@ teamRoutes.delete('/:teamid/prizes/:prizeid',async (req,res) => {
             success: true,
             error: '',
             data: {}
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+
+teamRoutes.get('/:id/bounties', async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+
+        // Only team members can see the prizes
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership) {
+            return res.status(401).send("Unauthorized: You are not a member of this team.")
+        }
+
+        let bounties = await getBounties(teamid)
+        console.log(bounties)
+        res.json({
+            success: true,
+            error: '',
+            data: bounties
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+teamRoutes.post('/:teamid/bounties',async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let bounty:TeamBounty = req.body
+        let missingFields:string[] = []
+        if (!bounty.team) { missingFields.push('team')}
+        if (!bounty.createdBy) { missingFields.push('createdBy')}
+        if (!bounty.name) { missingFields.push('name')}
+
+        if (missingFields.length) {
+            return res.json({
+                success: false,
+                error: 'Missing fields: '+missingFields.join(', '),
+                data: bounty
+            })
+        }
+
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty posted to the wrong URL")
+        }
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        let savedBounty = await createBounty(bounty)
+        console.log(savedBounty)
+        res.json({
+            success: true,
+            error: '',
+            data: savedBounty
         })
 
     } catch (err) {
