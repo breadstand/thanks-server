@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -585,20 +585,15 @@ function deactivateBounty(bountyid) {
         new: true
     });
 }
-function updateBounty(bountyid, update) {
+function updateBounty(bountyid, bounty) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (update.name) {
-            update.name = (0, utils_1.sanitizeName)(update.name);
-        }
-        if (update.active !== undefined) {
-            throw "Active status can only be updated through deactivateBounty()";
-        }
-        var bounty = yield team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
-            $set: update
+        var updatedBounty = yield team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
+            $set: bounty
         }, { new: true });
         return bounty;
     });
 }
+exports.updateBounty = updateBounty;
 function incrementSentCount(memberid, count = 1) {
     return membership_1.MembershipObject.findByIdAndUpdate(memberid, {
         $inc: {

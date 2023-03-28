@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { TeamBounty, TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, getBounties, getMemberByUserId, getUsersMemberships } from "../../../services/teams"
+import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, getBounties, getMemberByUserId, getUsersMemberships, updateBounty } from "../../../services/teams"
 import { pickTeamWinners } from "../../../services/thanks"
 import { getUser } from "../../../services/users"
 const Types = require('mongoose').Types
@@ -65,7 +65,6 @@ teamRoutes.get('/:id/prizes', async (req,res) => {
 
 
         let prizes = await availablePrizes(teamid)
-        console.log(prizes)
         res.json({
             success: true,
             error: '',
@@ -185,7 +184,6 @@ teamRoutes.get('/:id/bounties', async (req,res) => {
         }
 
         let bounties = await getBounties(teamid)
-        console.log(bounties)
         res.json({
             success: true,
             error: '',
@@ -237,3 +235,35 @@ teamRoutes.post('/:teamid/bounties',async (req,res) => {
         res.status(500).send('Internal server error')
     }
 })
+
+
+
+teamRoutes.put('/:teamid/bounties/:bountyid',async (req,res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let bountyid = new Types.ObjectId(req.params.bountyid)
+        let bounty:TeamBounty = req.body
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty posted to the wrong URL")
+        }
+
+        let updatedBounty = await updateBounty(bountyid,bounty)
+        console.log(updatedBounty)
+        res.json({
+            success: true,
+            error: '',
+            data: updatedBounty
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+

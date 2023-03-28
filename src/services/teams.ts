@@ -585,10 +585,9 @@ export function createBounty(bounty: TeamBounty) {
 	return bountyObject.save();
 };
 
-export function getBounties(teamid:ObjectId,active:boolean|null=true) {
+export function getBounties(teamid:ObjectId) {
 	var query = {
-		team: teamid,
-		active: active
+		team: teamid
 	};
 	return TeamBountyObject.find(query)
 		.sort({
@@ -621,16 +620,9 @@ function deactivateBounty(bountyid:ObjectId) {
 	});
 }
 
-async function updateBounty(bountyid:ObjectId,update:any) {
-	if (update.name) {
-		update.name = sanitizeName(update.name);
-	}
-	if (update.active !== undefined) {
-		throw "Active status can only be updated through deactivateBounty()";
-	}
-	
-	var bounty = await TeamBountyObject.findByIdAndUpdate(bountyid,{
-		$set: update
+export async function updateBounty(bountyid: string,bounty: TeamBounty) {	
+	var updatedBounty = await TeamBountyObject.findByIdAndUpdate(bountyid,{
+		$set: bounty
 	},{new: true});
 	return bounty;
 }
