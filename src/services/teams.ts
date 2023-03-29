@@ -590,6 +590,7 @@ export function getBounties(teamid: ObjectId) {
 		team: teamid
 	};
 	return TeamBountyObject.find(query)
+		.populate('createdBy')
 		.populate('approvedIdeas')
 		.populate({
 			path: 'approvedIdeas',
