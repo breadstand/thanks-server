@@ -386,7 +386,7 @@ export async function deactivateMember(memberId:ObjectId) {
 	return member;
 };
 
-async function notifyMember(memberId:ObjectId, subject:string, body:string) {
+export async function notifyMember(memberId:ObjectId, subject:string, body:string) {
 	var teamMember = await getMember(memberId);
 
 	// Some members probably haven't logged in, so there is

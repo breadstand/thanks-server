@@ -63,7 +63,6 @@ exports.teamRoutes.get('/:id/prizes', (req, res) => __awaiter(void 0, void 0, vo
             });
         }
         let prizes = yield (0, teams_1.availablePrizes)(teamid);
-        console.log(prizes);
         res.json({
             success: true,
             error: '',
@@ -172,7 +171,6 @@ exports.teamRoutes.get('/:id/bounties', (req, res) => __awaiter(void 0, void 0, 
             return res.status(401).send("Unauthorized: You are not a member of this team.");
         }
         let bounties = yield (0, teams_1.getBounties)(teamid);
-        console.log(bounties);
         res.json({
             success: true,
             error: '',

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -382,6 +382,7 @@ function notifyMember(memberId, subject, body) {
         }
     });
 }
+exports.notifyMember = notifyMember;
 //
 // Find any memberships that have the same contacts as this
 // user and then associate the user with them.
@@ -552,10 +553,9 @@ function createBounty(bounty) {
 }
 exports.createBounty = createBounty;
 ;
-function getBounties(teamid, active = true) {
+function getBounties(teamid) {
     var query = {
-        team: teamid,
-        active: active
+        team: teamid
     };
     return team_1.TeamBountyObject.find(query)
         .sort({

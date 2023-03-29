@@ -47,6 +47,7 @@ export interface ThanksPost {
     prize: ObjectId | TeamPrize,
     active: boolean,
     postType: string,
+    approvedBounties: ObjectId[]
 }
 
 export interface ThanksPostDetailed extends ThanksPost {
@@ -86,6 +87,10 @@ const thanksPostSchema = new Schema<ThanksPost>({
         enum : ['thanks','idea'],
         default: 'thanks'
     },
+    approvedBounties: [{
+        type: Schema.Types.ObjectId, 
+        ref: 'team_bounty'
+    }]
 });
 
 export const ThanksPostObject = model('thanks_post',thanksPostSchema);

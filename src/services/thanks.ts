@@ -2,7 +2,7 @@ import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
 import { Team, TeamPrize } from "../models/team";
 import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject } from "../models/thankspost";
-import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyOwners, notifyTeam } from "./teams";
+import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
 
 
 export interface DateRange {
@@ -110,40 +110,53 @@ export function getThanksPosts(teamid: ObjectId, filter: any) {
 		.populate('createdBy');
 }
 
-/*
-async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
-	var post = await ThanksPostObject.findByIdAndUpdate({
+
+export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
+	let post:ThanksPost|null = await ThanksPostObject.findByIdAndUpdate({
 		_id: postid,
-		posttype: 'idea'
+		postType: 'idea'
 	}, {
 		$push: {
-			approved_bounties: bountyid
+			approvedBounties: bountyid
 		}
 	}, {
 		new: true
 	});
-	var bounty = await getBounty(bountyid);
-	var subject = 'Bounty Approved: ' + post.for;
-	var message = 'Your idea was approved for a bounty.\n' +
-		'Idea: ' + post.for+
+	if (!post) {
+		return null
+	}
+
+	let bounty = await getBounty(bountyid);
+	if (!bounty) {
+		return post
+	}
+	let subject = 'Bounty Approved: ' + post.idea;
+	let message = 'Your idea was approved for a bounty.\n' +
+		'Idea: ' + post.idea+
 		'Bounty: ' + bounty.name +
 		'Amount: ' + bounty.amount;
-	teams.notifyMember(post.from, subject, message);
+	if (!post.createdBy) {
+		return post
+	}
+	notifyMember(post.createdBy as ObjectId, subject, message);
+	return post
 };
 
-async function removeBounty(postid,bountyid) {
-	var post = await ThanksPost.findById(postid);
+export async function removeBounty(postid:ObjectId,bountyid:ObjectId) {
+	let post = await ThanksPostObject.findById(postid);
+	if (!post) {
+		return null
+	}
 
-	var el = post.approved_bounties.findIndex( el => el.toString() == bountyid.toString());
+	let el = post.approvedBounties.findIndex( el => el.toString() == bountyid.toString());
 	if (el >= 0) {
-		post.approved_bounties.splice(el,1);		
+		post.approvedBounties.splice(el,1);		
 	}
 	await post.save();
 	return post;
 }
 
 
-*/
 
 
 async function figureOutDateRange(team: Team, now: Date = new Date()) {

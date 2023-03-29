@@ -125,3 +125,65 @@ exports.thanksPostsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0,
         res.status(500).send('Internal server error');
     }
 }));
+exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postId = new Types.ObjectId(req.params.id);
+        let bountyId = new Types.ObjectId(req.params.bountyid);
+        // Load post
+        let post = yield thankspost_1.ThanksPostObject.findById(postId);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners can approve/disapprove
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let updatedPost = yield (0, thanks_1.approveBounty)(postId, bountyId);
+        console.log(updatedPost);
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postId = new Types.ObjectId(req.params.id);
+        let bountyId = new Types.ObjectId(req.params.bountyid);
+        // Load post
+        let post = yield thankspost_1.ThanksPostObject.findById(postId);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners can approve/disapprove
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let updatedPost = yield (0, thanks_1.removeBounty)(postId, bountyId);
+        console.log(updatedPost);
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send('Internal server error');
+    }
+}));

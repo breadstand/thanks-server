@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.pickTeamWinners = exports.getThanksPosts = exports.createThanksPost = void 0;
+exports.deactivatePost = exports.pickTeamWinners = exports.removeBounty = exports.approveBounty = exports.getThanksPosts = exports.createThanksPost = void 0;
 const thankspost_1 = require("../models/thankspost");
 const teams_1 = require("./teams");
 function sanitizeFor(postfor, size = 280) {
@@ -106,40 +106,53 @@ function getThanksPosts(teamid, filter) {
         .populate('createdBy');
 }
 exports.getThanksPosts = getThanksPosts;
-/*
-async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
-    var post = await ThanksPostObject.findByIdAndUpdate({
-        _id: postid,
-        posttype: 'idea'
-    }, {
-        $push: {
-            approved_bounties: bountyid
+function approveBounty(postid, bountyid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let post = yield thankspost_1.ThanksPostObject.findByIdAndUpdate({
+            _id: postid,
+            postType: 'idea'
+        }, {
+            $push: {
+                approvedBounties: bountyid
+            }
+        }, {
+            new: true
+        });
+        if (!post) {
+            return null;
         }
-    }, {
-        new: true
+        let bounty = yield (0, teams_1.getBounty)(bountyid);
+        if (!bounty) {
+            return post;
+        }
+        let subject = 'Bounty Approved: ' + post.idea;
+        let message = 'Your idea was approved for a bounty.\n' +
+            'Idea: ' + post.idea +
+            'Bounty: ' + bounty.name +
+            'Amount: ' + bounty.amount;
+        if (!post.createdBy) {
+            return post;
+        }
+        (0, teams_1.notifyMember)(post.createdBy, subject, message);
     });
-    var bounty = await getBounty(bountyid);
-    var subject = 'Bounty Approved: ' + post.for;
-    var message = 'Your idea was approved for a bounty.\n' +
-        'Idea: ' + post.for+
-        'Bounty: ' + bounty.name +
-        'Amount: ' + bounty.amount;
-    teams.notifyMember(post.from, subject, message);
-};
-
-async function removeBounty(postid,bountyid) {
-    var post = await ThanksPost.findById(postid);
-
-    var el = post.approved_bounties.findIndex( el => el.toString() == bountyid.toString());
-    if (el >= 0) {
-        post.approved_bounties.splice(el,1);
-    }
-    await post.save();
-    return post;
 }
-
-
-*/
+exports.approveBounty = approveBounty;
+;
+function removeBounty(postid, bountyid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let post = yield thankspost_1.ThanksPostObject.findById(postid);
+        if (!post) {
+            return null;
+        }
+        let el = post.approvedBounties.findIndex(el => el.toString() == bountyid.toString());
+        if (el >= 0) {
+            post.approvedBounties.splice(el, 1);
+        }
+        yield post.save();
+        return post;
+    });
+}
+exports.removeBounty = removeBounty;
 function figureOutDateRange(team, now = new Date()) {
     return __awaiter(this, void 0, void 0, function* () {
         /*

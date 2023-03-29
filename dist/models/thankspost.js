@@ -52,6 +52,10 @@ const thanksPostSchema = new mongoose_1.Schema({
         enum: ['thanks', 'idea'],
         default: 'thanks'
     },
+    approvedBounties: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'team_bounty'
+        }]
 });
 exports.ThanksPostObject = (0, mongoose_1.model)('thanks_post', thanksPostSchema);
 thanksPostSchema.index({ createdBy: 1 });

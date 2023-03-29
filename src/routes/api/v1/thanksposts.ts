@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { ThanksPostObject, ThanksPost } from "../../../models/thankspost"
 import { getMemberByUserId } from "../../../services/teams"
-import { createThanksPost, deactivatePost, getThanksPosts } from "../../../services/thanks"
+import { approveBounty, createThanksPost, deactivatePost, getThanksPosts, removeBounty } from "../../../services/thanks"
 const Types = require('mongoose').Types
 
 export var thanksPostsRoutes = Router()
@@ -138,3 +138,74 @@ thanksPostsRoutes.put('/:id/deactivate', async (req, res) => {
 
 
 
+
+thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', async (req, res) => {
+    try {
+        let postId = new Types.ObjectId(req.params.id)
+        let bountyId = new Types.ObjectId(req.params.bountyid)
+
+        // Load post
+        let post = await ThanksPostObject.findById(postId) as ThanksPost
+
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            })
+        }
+
+        // Only team owners can approve/disapprove
+        let member = await getMemberByUserId(post.team,req.userId)
+        if (!member?.owner) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.")
+        }
+
+        let updatedPost = await approveBounty(postId,bountyId)
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        })
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', async (req, res) => {
+    try {
+        let postId = new Types.ObjectId(req.params.id)
+        let bountyId = new Types.ObjectId(req.params.bountyid)
+
+        // Load post
+        let post = await ThanksPostObject.findById(postId) as ThanksPost
+
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            })
+        }
+
+        // Only team owners can approve/disapprove
+        let member = await getMemberByUserId(post.team,req.userId)
+        if (!member?.owner) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.")
+        }
+
+        let updatedPost = await removeBounty(postId,bountyId)
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        })
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).send('Internal server error')
+    }
+})
