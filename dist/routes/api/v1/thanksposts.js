@@ -144,7 +144,6 @@ exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', (req, res) => _
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
         let updatedPost = yield (0, thanks_1.approveBounty)(postId, bountyId);
-        console.log(updatedPost);
         res.json({
             success: true,
             error: '',
@@ -175,7 +174,6 @@ exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', (req, res) => __
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
         let updatedPost = yield (0, thanks_1.removeBounty)(postId, bountyId);
-        console.log(updatedPost);
         res.json({
             success: true,
             error: '',

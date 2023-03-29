@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivatePost = exports.pickTeamWinners = exports.removeBounty = exports.approveBounty = exports.getThanksPosts = exports.createThanksPost = void 0;
+const team_1 = require("../models/team");
 const thankspost_1 = require("../models/thankspost");
 const teams_1 = require("./teams");
 function sanitizeFor(postfor, size = 280) {
@@ -121,7 +122,15 @@ function approveBounty(postid, bountyid) {
         if (!post) {
             return null;
         }
-        let bounty = yield (0, teams_1.getBounty)(bountyid);
+        let bounty = yield team_1.TeamBountyObject.findByIdAndUpdate({
+            _id: bountyid
+        }, {
+            $push: {
+                approvedIdeas: postid
+            }
+        }, {
+            new: true
+        });
         if (!bounty) {
             return post;
         }
@@ -134,6 +143,7 @@ function approveBounty(postid, bountyid) {
             return post;
         }
         (0, teams_1.notifyMember)(post.createdBy, subject, message);
+        return post;
     });
 }
 exports.approveBounty = approveBounty;
@@ -141,14 +151,21 @@ exports.approveBounty = approveBounty;
 function removeBounty(postid, bountyid) {
     return __awaiter(this, void 0, void 0, function* () {
         let post = yield thankspost_1.ThanksPostObject.findById(postid);
-        if (!post) {
-            return null;
+        if (post) {
+            let el = post.approvedBounties.findIndex(el => el.toString() == bountyid.toString());
+            if (el >= 0) {
+                post.approvedBounties.splice(el, 1);
+            }
+            yield post.save();
         }
-        let el = post.approvedBounties.findIndex(el => el.toString() == bountyid.toString());
-        if (el >= 0) {
-            post.approvedBounties.splice(el, 1);
+        let bounty = yield team_1.TeamBountyObject.findById(bountyid);
+        if (bounty) {
+            let el = bounty.approvedIdeas.findIndex(el => el.toString() == postid.toString());
+            if (el >= 0) {
+                bounty.approvedIdeas.splice(el, 1);
+            }
+            yield bounty.save();
         }
-        yield post.save();
         return post;
     });
 }

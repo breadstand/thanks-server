@@ -65,7 +65,11 @@ const teamBountySchema = new mongoose_1.Schema({
     active: {
         type: Boolean,
         default: true
-    }
+    },
+    approvedIdeas: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'thanks_post'
+        }]
 });
 exports.TeamBountyObject = (0, mongoose_1.model)('team_bounty', teamBountySchema);
 teamBountySchema.index({ "team": 1 });

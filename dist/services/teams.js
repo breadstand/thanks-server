@@ -558,6 +558,14 @@ function getBounties(teamid) {
         team: teamid
     };
     return team_1.TeamBountyObject.find(query)
+        .populate('approvedIdeas')
+        .populate({
+        path: 'approvedIdeas',
+        populate: {
+            path: 'createdBy',
+            model: 'membership'
+        }
+    })
         .sort({
         name: 1
     });
