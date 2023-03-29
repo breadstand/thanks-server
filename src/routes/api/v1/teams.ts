@@ -184,7 +184,6 @@ teamRoutes.get('/:id/bounties', async (req,res) => {
         }
 
         let bounties = await getBounties(teamid)
-        console.log(bounties)
         res.json({
             success: true,
             error: '',
