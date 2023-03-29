@@ -1,6 +1,6 @@
 import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
-import { Team, TeamPrize } from "../models/team";
+import { Team, TeamBounty, TeamBountyObject, TeamPrize } from "../models/team";
 import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject } from "../models/thankspost";
 import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
 
@@ -126,7 +126,16 @@ export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
 		return null
 	}
 
-	let bounty = await getBounty(bountyid);
+	let bounty:TeamBounty|null = await TeamBountyObject.findByIdAndUpdate({
+		_id: bountyid
+	}, {
+		$push: {
+			approvedIdeas: postid
+		}
+	}, {
+		new: true
+	});
+
 	if (!bounty) {
 		return post
 	}
@@ -144,15 +153,24 @@ export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
 
 export async function removeBounty(postid:ObjectId,bountyid:ObjectId) {
 	let post = await ThanksPostObject.findById(postid);
-	if (!post) {
-		return null
+	if (post) {
+		let el = post.approvedBounties.findIndex( el => el.toString() == bountyid.toString());
+		if (el >= 0) {
+			post.approvedBounties.splice(el,1);		
+		}
+		await post.save();
 	}
 
-	let el = post.approvedBounties.findIndex( el => el.toString() == bountyid.toString());
-	if (el >= 0) {
-		post.approvedBounties.splice(el,1);		
+	let bounty = await TeamBountyObject.findById(bountyid);
+	if (bounty) {
+		let el = bounty.approvedIdeas.findIndex( el => el.toString() == postid.toString());
+		if (el >= 0) {
+			bounty.approvedIdeas.splice(el,1);		
+		}
+		await bounty.save();
 	}
-	await post.save();
+
+
 	return post;
 }
 

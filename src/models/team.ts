@@ -77,8 +77,8 @@ export interface TeamBounty {
     active: {
         type: Boolean,
         default: true
-    }
-
+    },
+    approvedIdeas: ObjectId[]
 }
 
 const teamBountySchema = new Schema<TeamBounty>({
@@ -100,7 +100,11 @@ const teamBountySchema = new Schema<TeamBounty>({
     active: {
         type: Boolean,
         default: true
-    }
+    },
+    approvedIdeas: [{
+        type: Schema.Types.ObjectId, 
+        ref: 'thanks_post'
+    }]
 });
 
 export const TeamBountyObject = model('team_bounty',teamBountySchema);

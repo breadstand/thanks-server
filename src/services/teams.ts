@@ -9,15 +9,15 @@ import { smtpSend } from "./smtp";
 import { findUserByContact } from "./users";
 import { sanitizeEmail, sanitizeName, sanitizePhone } from "./utils";
 
-const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY,{
-    apiVersion: process.env.STRIPE_API_VERSION
+const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
+	apiVersion: process.env.STRIPE_API_VERSION
 });
 const cryptoRandomString = require('crypto-random-string');
-const {phone} = require('phone');
+const { phone } = require('phone');
 
 const maxteams = 50;
 
-function getDateDaysAgo(daysago:number) {
+function getDateDaysAgo(daysago: number) {
 	var created = new Date();
 	created.setDate(created.getDate() - daysago);
 	let month = created.getMonth();
@@ -28,7 +28,7 @@ function getDateDaysAgo(daysago:number) {
 }
 
 
-function standardizePhone(number:string) {
+function standardizePhone(number: string) {
 	var p = phone(number);
 	var standardized_phone = p[0];
 	if (standardized_phone) {
@@ -44,29 +44,29 @@ Adds users to a team.
 
 teamid: objectid of the team
 owner (Membership object):
-    These are the name and contact information for the person who added
-    the user to the team. When a users is added to a team, we will 
-    send them a text message or email to tell them that the are part of the
-    team. In this age of spam and for security, users might be cautious 
-    to respond to the text or email. By providing the ownername and contact
-    information, this gives credibility to the message.
+	These are the name and contact information for the person who added
+	the user to the team. When a users is added to a team, we will 
+	send them a text message or email to tell them that the are part of the
+	team. In this age of spam and for security, users might be cautious 
+	to respond to the text or email. By providing the ownername and contact
+	information, this gives credibility to the message.
 membership_email: the way to contact/message the user (email address or mobile number)
 
 
 We have a couple of situations:
 1. A corporation may add users. They may want to control notifications. Users
-    can only interact with corporate approved accounts. So a corporation is not 
-    going to like a user adding or changing or adjust contact information. 
-    So contact information cannot be altered. 
+	can only interact with corporate approved accounts. So a corporation is not 
+	going to like a user adding or changing or adjust contact information. 
+	So contact information cannot be altered. 
 2. A regular person, like a PTA member, might want to use the system.
-    They will not really care about notifications or control or security. Users can
-    do what they like.
+	They will not really care about notifications or control or security. Users can
+	do what they like.
 
 */
 
 
 
-export async function addMemberByContact(teamid:ObjectId, owner:Membership, name:string, contact:string,contactType:string) {
+export async function addMemberByContact(teamid: ObjectId, owner: Membership, name: string, contact: string, contactType: string) {
 	var n = sanitizeName(name);
 
 	if (!n) {
@@ -76,10 +76,10 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 	let c = undefined
 	let teamMember = null;
 
-	if (contactType=='phone') {
+	if (contactType == 'phone') {
 		c = sanitizePhone(contact)
 	}
-	if (contactType=='email') {
+	if (contactType == 'email') {
 		c = sanitizeEmail(contact)
 	}
 	if (!c) {
@@ -87,7 +87,7 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 	}
 
 	// See if a user exists with this contact
-	let user = await findUserByContact(c,contactType)
+	let user = await findUserByContact(c, contactType)
 
 	console.log(user)
 	// If the user exists...
@@ -95,7 +95,7 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 
 		// See if they are already a member of this team
 		teamMember = await MembershipObject.findOne({
-			team: teamid, 
+			team: teamid,
 			user: user._id
 		})
 
@@ -103,8 +103,8 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 		// If they are a member, make sure they are active
 		if (teamMember) {
 			teamMember.active = true;
-			teamMember.name = n;	
-		} 
+			teamMember.name = n;
+		}
 		// If they are not, add them
 		else {
 			teamMember = new MembershipObject({
@@ -112,16 +112,16 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 				name: n,
 				user: user._id,
 				active: true
-			});	
+			});
 		}
-	} 
+	}
 	// If no user exists with this contact...
 	else {
 		// Create a new team member with this contact information
 		teamMember = new MembershipObject({
 			team: teamid,
 			name: n,
-			contacts: [{contact: c,contactType:contactType}],
+			contacts: [{ contact: c, contactType: contactType }],
 			active: true,
 		});
 	}
@@ -135,7 +135,7 @@ export async function addMemberByContact(teamid:ObjectId, owner:Membership, name
 
 
 // This is when we already have access to the user object, and not just the email
-async function addMember(teamid:ObjectId, user:User) {
+async function addMember(teamid: ObjectId, user: User) {
 	var newteamMember = undefined;
 
 	// See if the user already exists
@@ -146,11 +146,11 @@ async function addMember(teamid:ObjectId, user:User) {
 
 
 	let phone = null;
-	let email = null; 
+	let email = null;
 	if (user.contacts.length) {
 		if (user.contacts[0].contactType == 'phone') {
 			phone = user.contacts[0].contact
-		} 
+		}
 		if (user.contacts[0].contactType == 'email') {
 			email = user.contacts[0].contact
 		}
@@ -181,11 +181,11 @@ async function addMember(teamid:ObjectId, user:User) {
 }
 
 
-export function getUsersMemberships(userid:ObjectId):UsersMembership[] {
+export function getUsersMemberships(userid: ObjectId): UsersMembership[] {
 	return MembershipObject.find({
-			user: userid,
-			active: true
-		})
+		user: userid,
+		active: true
+	})
 		.populate({
 			path: 'team'
 		})
@@ -194,7 +194,7 @@ export function getUsersMemberships(userid:ObjectId):UsersMembership[] {
 		});
 }
 
-export async function createTeamName(user:User) {
+export async function createTeamName(user: User) {
 	var usersteams = await getUsersMemberships(user._id);
 
 	if (usersteams.length >= maxteams) {
@@ -234,7 +234,7 @@ Returns: result array
 results[0] Membership object
 results[1]
 */
-export async function createTeam(user:User,options:any={}):Promise<[Team,Membership]> {
+export async function createTeam(user: User, options: any = {}): Promise<[Team, Membership]> {
 
 	if (!options.teamName) {
 		options.teamName = await createTeamName(user);
@@ -260,7 +260,7 @@ export async function createTeam(user:User,options:any={}):Promise<[Team,Members
 		active: true
 	});
 
-	return Promise.all([team.save(),membership.save()])
+	return Promise.all([team.save(), membership.save()])
 }
 
 //
@@ -272,25 +272,25 @@ export async function createTeam(user:User,options:any={}):Promise<[Team,Members
 // easier, getMembers() will basically take the profile of users which is a member of the 
 // team and make a list out of them. Basically getMembers() returns a list of each users profile
 // for this team. 
-function getNewMembers(teamid:ObjectId):Membership[] {
+function getNewMembers(teamid: ObjectId): Membership[] {
 	return MembershipObject.find({
-			team: teamid,
-			active: true
-		})
+		team: teamid,
+		active: true
+	})
 		.sort({
 			_id: -1
 		})
 		.limit(5);
 }
 
-function getMember(memberid:ObjectId):TeamMember {
+function getMember(memberid: ObjectId): TeamMember {
 	return MembershipObject.findOne({
 		_id: memberid,
 		active: true
 	}).populate('user');
 }
 
-export function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership|null {
+export function getMemberByUserId(teamid: ObjectId, userid: ObjectId): Membership | null {
 	return MembershipObject.findOne({
 		team: teamid,
 		user: userid,
@@ -299,11 +299,11 @@ export function getMemberByUserId(teamid:ObjectId,userid:ObjectId):Membership|nu
 }
 
 
-export function getMemberships(teamid:ObjectId):Promise<Membership[]> {
+export function getMemberships(teamid: ObjectId): Promise<Membership[]> {
 	return MembershipObject.find({
-			team: teamid,
-			active: true
-		})
+		team: teamid,
+		active: true
+	})
 		.sort({
 			name: 1,
 			email: 1
@@ -311,7 +311,7 @@ export function getMemberships(teamid:ObjectId):Promise<Membership[]> {
 }
 
 
-function getMemberByEmail(teamid:ObjectId, email:string):Membership {
+function getMemberByEmail(teamid: ObjectId, email: string): Membership {
 	var standardized_email = sanitizeEmail(email);
 	return MembershipObject.findOne({
 		team: teamid,
@@ -320,7 +320,7 @@ function getMemberByEmail(teamid:ObjectId, email:string):Membership {
 	});
 }
 
-function findMemberByContact(teamid:ObjectId, contact:string):Membership|null {
+function findMemberByContact(teamid: ObjectId, contact: string): Membership | null {
 	var email = sanitizeEmail(contact);
 	//var phone = teams.standardizePhone(contact);
 	if (email) {
@@ -339,7 +339,7 @@ function findMemberByContact(teamid:ObjectId, contact:string):Membership|null {
 	return null;
 }
 
-function adjustSentCount(teamid:ObjectId, count:number) {
+function adjustSentCount(teamid: ObjectId, count: number) {
 	return TeamObject.findByIdAndUpdate(teamid, {
 		$inc: {
 			sent: count
@@ -349,15 +349,15 @@ function adjustSentCount(teamid:ObjectId, count:number) {
 	});
 };
 
-function updateMemberCount(teamid:ObjectId) {
+function updateMemberCount(teamid: ObjectId) {
 	return MembershipObject.countDocuments({
-			team: teamid,
-			active: true
-		})
-		.then( (member_count:number)  => {
+		team: teamid,
+		active: true
+	})
+		.then((member_count: number) => {
 			return TeamObject.findByIdAndUpdate(teamid, {
 				$set: {
-					members: member_count 
+					members: member_count
 				}
 			}, {
 				new: true
@@ -366,7 +366,7 @@ function updateMemberCount(teamid:ObjectId) {
 }
 
 
-export async function deactivateMember(memberId:ObjectId) {
+export async function deactivateMember(memberId: ObjectId) {
 	var member = await MembershipObject.findOneAndUpdate(
 		{
 			_id: memberId,
@@ -378,7 +378,7 @@ export async function deactivateMember(memberId:ObjectId) {
 			}
 		}, {
 		new: true
-		});
+	});
 	if (!member) {
 		return null;
 	}
@@ -386,17 +386,17 @@ export async function deactivateMember(memberId:ObjectId) {
 	return member;
 };
 
-export async function notifyMember(memberId:ObjectId, subject:string, body:string) {
+export async function notifyMember(memberId: ObjectId, subject: string, body: string) {
 	var teamMember = await getMember(memberId);
 
 	// Some members probably haven't logged in, so there is
 	// no user associated with them. For members who have a user
 	// send to the user's contacts. For members who do not have a user
 	// send to the member's contacts.
-	let contacts:MembershipContact[]|UserContact[] = teamMember.contacts
+	let contacts: MembershipContact[] | UserContact[] = teamMember.contacts
 	if (teamMember.user) {
 		contacts = teamMember.user.contacts
-	} 
+	}
 	for (let i = 0; i < contacts.length; i++) {
 		let contact = contacts[i]
 		if (contact.contactType == 'phone') {
@@ -412,15 +412,15 @@ export async function notifyMember(memberId:ObjectId, subject:string, body:strin
 //
 // Find any memberships that have the same contacts as this
 // user and then associate the user with them.
-async function updateUsersMemberships(user:User) {
-	for (let i = 0; i < user.contacts.length;i++) {
+async function updateUsersMemberships(user: User) {
+	for (let i = 0; i < user.contacts.length; i++) {
 		let contact = user.contacts[i]
 
 		let members = await MembershipObject.find({
 			"contact.contact": contact,
 			active: true
 		});
-		for (let m = 0; m < members.length;m++) {
+		for (let m = 0; m < members.length; m++) {
 			let member = members[m];
 			member.user = user._id;
 			await member.save();
@@ -428,13 +428,13 @@ async function updateUsersMemberships(user:User) {
 	}
 };
 
-async  function addDefaultOwner(teamId:ObjectId) {
+async function addDefaultOwner(teamId: ObjectId) {
 	let members = await getMemberships(teamId);
-	return MembershipObject.findByIdAndUpdate(members[0]._id,{owner: true})
+	return MembershipObject.findByIdAndUpdate(members[0]._id, { owner: true })
 }
 
 
-function sendInvitation(teamMember:ObjectId, owner:Membership) {
+function sendInvitation(teamMember: ObjectId, owner: Membership) {
 	if (!owner.contacts.length) {
 		return;
 	}
@@ -442,24 +442,24 @@ function sendInvitation(teamMember:ObjectId, owner:Membership) {
 	var body = "This is an automated message from Breadstand's Thanks Program.";
 	body += `${owner.name} (${owner.contacts[0].contact}) would like you to join the thanks program.`;
 	body += " To get started, visit: \n";
-	body += 'https://www.th8nks.com/thanks/?memberid='+teamMember;
+	body += 'https://www.th8nks.com/thanks/?memberid=' + teamMember;
 	body += "\n";
 	body += "Thank you. We hope you have a great day.";
 	return notifyMember(teamMember, subject, body);
 }
 
-export async function notifyTeam(teamid:ObjectId, subject:string, body:string) {
+export async function notifyTeam(teamid: ObjectId, subject: string, body: string) {
 	await getMemberships(teamid)
-		.then( (members:Membership[]) => {
+		.then((members: Membership[]) => {
 			members.forEach(async member => {
 				await notifyMember(member._id, subject, body);
 			});
 		});
 }
 
-export async function notifyOwners(teamid:ObjectId, subject:string, body:string) {
+export async function notifyOwners(teamid: ObjectId, subject: string, body: string) {
 	await getOwners(teamid)
-		.then( members  => {
+		.then(members => {
 			members.forEach(async member => {
 				await notifyMember(member._id, subject, body);
 			});
@@ -467,12 +467,12 @@ export async function notifyOwners(teamid:ObjectId, subject:string, body:string)
 }
 
 
-export async function getTeam(teamid:ObjectId):Promise<Team|null> {
+export async function getTeam(teamid: ObjectId): Promise<Team | null> {
 	return TeamObject.findById(teamid);
 }
 
 
-function getOwners(teamid:ObjectId):Promise<Membership[]> {
+function getOwners(teamid: ObjectId): Promise<Membership[]> {
 	return MembershipObject.find({
 		team: teamid,
 		owner: true,
@@ -481,7 +481,7 @@ function getOwners(teamid:ObjectId):Promise<Membership[]> {
 }
 
 
-function getStripeCustomerId(team:Team) {
+function getStripeCustomerId(team: Team) {
 	return new Promise((resolve, reject) => {
 		if (team.stripeCustomerId) {
 			return resolve(team.stripeCustomerId);
@@ -489,14 +489,14 @@ function getStripeCustomerId(team:Team) {
 
 		var description = `${team.name} ${team._id.toString()}`;
 		return stripe.customers.create({
-				description: description
-			})
-			.then( (result:any) => {
+			description: description
+		})
+			.then((result: any) => {
 				team.stripeCustomerId = result.id;
-				return TeamObject.findByIdAndUpdate(team._id,{stripeCustomerId: result.id})
-			}).then( (team:Team) => {
+				return TeamObject.findByIdAndUpdate(team._id, { stripeCustomerId: result.id })
+			}).then((team: Team) => {
 				return resolve(team.stripeCustomerId);
-			}).catch( (err:any) => {
+			}).catch((err: any) => {
 				reject(err);
 			});
 	});
@@ -516,19 +516,19 @@ function getStripeCustomerId(team:Team) {
 */
 /*
 function getBillDay(team,dateToBill=new Date()) {
-    let effectiveBillDay = team.billday;
-    if (!effectiveBillDay) {
-        effectiveBillDay = team.created.getDay();
-    }
-    // Figure out the number of days in the month
-    let month = dateToBill.getMonth();
-    let year = dateToBill.getFullYear();
-    let endOfMonth = new Date(year,month+1,0);
-    let numberOfDays = endOfMonth.getDate();
-    if (numberOfDays < effectiveBillDay) {
-        effectiveBillDay = numberOfDays;
-    }
-    return effectiveBillDay
+	let effectiveBillDay = team.billday;
+	if (!effectiveBillDay) {
+		effectiveBillDay = team.created.getDay();
+	}
+	// Figure out the number of days in the month
+	let month = dateToBill.getMonth();
+	let year = dateToBill.getFullYear();
+	let endOfMonth = new Date(year,month+1,0);
+	let numberOfDays = endOfMonth.getDate();
+	if (numberOfDays < effectiveBillDay) {
+		effectiveBillDay = numberOfDays;
+	}
+	return effectiveBillDay
 }
 */
 
@@ -539,7 +539,7 @@ shouldBill(team,billingdate);
 
 
 
-async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
+async function importMembers(teamid: ObjectId, owner: Membership, text: string) {
 	var list = text.split("\n");
 	var imported = [];
 	var rejected = [];
@@ -556,7 +556,7 @@ async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
 			rejected.push(lineitem);
 			continue;
 		}
-		let name = lineitem.slice(0,lastspace).trim();
+		let name = lineitem.slice(0, lastspace).trim();
 		let contact = lineitem.slice(lastspace).trim();
 		let contactType = ''
 
@@ -570,7 +570,7 @@ async function importMembers(teamid:ObjectId, owner:Membership, text:string) {
 			}
 		}
 
-		var m = await addMemberByContact(teamid, owner, name, contact,contactType);
+		var m = await addMemberByContact(teamid, owner, name, contact, contactType);
 		if (m) {
 			imported.push(name);
 		} else {
@@ -585,22 +585,30 @@ export function createBounty(bounty: TeamBounty) {
 	return bountyObject.save();
 };
 
-export function getBounties(teamid:ObjectId) {
+export function getBounties(teamid: ObjectId) {
 	var query = {
 		team: teamid
 	};
 	return TeamBountyObject.find(query)
+		.populate('approvedIdeas')
+		.populate({
+			path: 'approvedIdeas',
+			populate: {
+				path: 'createdBy',
+				model: 'membership'
+			}
+		})
 		.sort({
-			name: 1
-		});
+				name: 1
+			});
 }
 
-export function getBounty(bountyid:ObjectId) {
+export function getBounty(bountyid: ObjectId) {
 	return TeamBountyObject.findById(bountyid);
 }
 
 
-function activateBounty(bountyid:ObjectId) {
+function activateBounty(bountyid: ObjectId) {
 	return TeamBountyObject.findByIdAndUpdate(bountyid, {
 		$set: {
 			active: true
@@ -610,7 +618,7 @@ function activateBounty(bountyid:ObjectId) {
 	});
 }
 
-function deactivateBounty(bountyid:ObjectId) {
+function deactivateBounty(bountyid: ObjectId) {
 	return TeamBountyObject.findByIdAndUpdate(bountyid, {
 		$set: {
 			active: false
@@ -620,14 +628,14 @@ function deactivateBounty(bountyid:ObjectId) {
 	});
 }
 
-export async function updateBounty(bountyid: string,bounty: TeamBounty) {	
-	var updatedBounty = await TeamBountyObject.findByIdAndUpdate(bountyid,{
+export async function updateBounty(bountyid: string, bounty: TeamBounty) {
+	var updatedBounty = await TeamBountyObject.findByIdAndUpdate(bountyid, {
 		$set: bounty
-	},{new: true});
+	}, { new: true });
 	return bounty;
 }
 
-export function incrementSentCount(memberid:ObjectId,count=1) {
+export function incrementSentCount(memberid: ObjectId, count = 1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			sent: count
@@ -637,7 +645,7 @@ export function incrementSentCount(memberid:ObjectId,count=1) {
 	});
 }
 
-export function incrementReceivedCount(memberid:ObjectId,count=1) {
+export function incrementReceivedCount(memberid: ObjectId, count = 1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			received: count
@@ -647,7 +655,7 @@ export function incrementReceivedCount(memberid:ObjectId,count=1) {
 	});
 }
 
-export function incrementIdeaCount(memberid:ObjectId,count=1) {
+export function incrementIdeaCount(memberid: ObjectId, count = 1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
 		$inc: {
 			ideas: count
@@ -657,9 +665,9 @@ export function incrementIdeaCount(memberid:ObjectId,count=1) {
 	});
 }
 
-function updateTeam(teamid:ObjectId, update:Team) {
+function updateTeam(teamid: ObjectId, update: Team) {
 	if (update.name) {
-		update.name = update.name.slice(0,40).trim();
+		update.name = update.name.slice(0, 40).trim();
 	}
 
 
@@ -670,21 +678,21 @@ function updateTeam(teamid:ObjectId, update:Team) {
 	});
 }
 
-async function resetMember(member:Membership) {
-	await MembershipObject.findById(member._id,{user: null})
+async function resetMember(member: Membership) {
+	await MembershipObject.findById(member._id, { user: null })
 }
 
-export function updateMember(memberid:ObjectId, update:Membership) {
+export function updateMember(memberid: ObjectId, update: Membership) {
 	//Update to allow removal of email or phone
 	let name = sanitizeName(update.name);
-	if (name)  {
+	if (name) {
 		update.name = name;
 	}
 
 	if (update.details) {
-		update.details = update.details.slice(0,80).trim();
+		update.details = update.details.slice(0, 80).trim();
 	}
-	update.contacts.forEach( contact => {
+	update.contacts.forEach(contact => {
 		if (contact.contactType == 'email') {
 			let sanitized = sanitizeEmail(contact.contact);
 			if (sanitized) {
@@ -696,21 +704,21 @@ export function updateMember(memberid:ObjectId, update:Membership) {
 		}
 	})
 
-	return MembershipObject.findByIdAndUpdate(memberid,update);
+	return MembershipObject.findByIdAndUpdate(memberid, update);
 }
 
-function setMemberPrivileges(memberid:ObjectId,privileges:string[]) {
+function setMemberPrivileges(memberid: ObjectId, privileges: string[]) {
 	var update = {
 		owner: false
 	};
 	if (privileges[0] == 'owner') {
 		update.owner = true;
 	}
-	return MembershipObject.findByIdAndUpdate(memberid,{active: true,owner: true},{new: true})
+	return MembershipObject.findByIdAndUpdate(memberid, { active: true, owner: true }, { new: true })
 }
 
 
-async function deleteTeam(teamid:ObjectId) {
+async function deleteTeam(teamid: ObjectId) {
 	var team = await TeamObject.findById(teamid);
 	if (!team) {
 		return null;
@@ -718,9 +726,9 @@ async function deleteTeam(teamid:ObjectId) {
 	var jobs = [];
 
 	jobs.push(TeamObject.findByIdAndDelete(teamid));
-	jobs.push(MembershipObject.deleteMany({team: teamid}));
-	jobs.push(TeamBountyObject.deleteMany({team: teamid}));	
-	jobs.push(TeamPrizeObject.deleteMany({team: teamid}));
+	jobs.push(MembershipObject.deleteMany({ team: teamid }));
+	jobs.push(TeamBountyObject.deleteMany({ team: teamid }));
+	jobs.push(TeamPrizeObject.deleteMany({ team: teamid }));
 
 	await Promise.all(jobs);
 }
@@ -728,14 +736,14 @@ async function deleteTeam(teamid:ObjectId) {
 
 
 
-async function forEach( func: (teamid:ObjectId)=>AnyARecord ) {
+async function forEach(func: (teamid: ObjectId) => AnyARecord) {
 	var processed = 0;
-	await TeamObject.find({active: true})
-	.select('_id')
-	.cursor()
-	.eachAsync( async function (team: Team) {
-		await func(team._id);
-		processed++;
+	await TeamObject.find({ active: true })
+		.select('_id')
+		.cursor()
+		.eachAsync(async function (team: Team) {
+			await func(team._id);
+			processed++;
 		});
 	return processed;
 }
@@ -751,7 +759,7 @@ async function deleteOrphans() {
 	await MembershipObject.find({})
 		.populate('team')
 		.cursor()
-		.eachAsync(async function(member:Membership) {
+		.eachAsync(async function (member: Membership) {
 			if (!member.team) {
 				await MembershipObject.findByIdAndDelete(member._id);
 			}
@@ -760,37 +768,37 @@ async function deleteOrphans() {
 	await TeamBountyObject.find({})
 		.populate('team')
 		.cursor()
-		.eachAsync(async function(bounty:any) {
+		.eachAsync(async function (bounty: any) {
 			if (!bounty.team) {
-				console.log('delete bounty:',bounty._id);
+				console.log('delete bounty:', bounty._id);
 				await TeamBountyObject.findByIdAndDelete(bounty._id);
 			}
 		});
 
 	await TeamObject.find({})
 		.cursor()
-		.eachAsync(async function(team:Team) {
-			var member_count = await MembershipObject.countDocuments({team: team._id,active: true});
+		.eachAsync(async function (team: Team) {
+			var member_count = await MembershipObject.countDocuments({ team: team._id, active: true });
 			if (member_count === 0) {
-				console.log('delete team:',team._id);
+				console.log('delete team:', team._id);
 				await deleteTeam(team._id);
 			}
 		});
 	await TeamPrizeObject.find({})
-	.populate('team')
-	.cursor()
-	.eachAsync(async function(prize:any) {
-		if (!prize.team) {
-			await TeamPrizeObject.findByIdAndDelete(prize._id);
-		}
-	});
+		.populate('team')
+		.cursor()
+		.eachAsync(async function (prize: any) {
+			if (!prize.team) {
+				await TeamPrizeObject.findByIdAndDelete(prize._id);
+			}
+		});
 
 }
 
-async function getDraftPrize(teamId:ObjectId) {
-	let prize = await TeamPrizeObject.findOne({team: teamId,draft: true});
+async function getDraftPrize(teamId: ObjectId) {
+	let prize = await TeamPrizeObject.findOne({ team: teamId, draft: true });
 	if (!prize) {
-		prize = new TeamPrizeObject({draft: true, active: false,team: teamId});
+		prize = new TeamPrizeObject({ draft: true, active: false, team: teamId });
 		await prize.save();
 	}
 	return prize;
@@ -803,17 +811,17 @@ export function createPrize(prize: TeamPrize) {
 	return p.save();
 }
 
-export async function availablePrizes(teamid:ObjectId):Promise<TeamPrize[]> {
+export async function availablePrizes(teamid: ObjectId): Promise<TeamPrize[]> {
 	return TeamPrizeObject.find({
 		team: teamid,
-		awardedTo: { $exists: false},
+		awardedTo: { $exists: false },
 		active: true
 	}).sort({
 		name: 1
 	});
 }
 
-export async function nextAvailablePrize(teamid:ObjectId):Promise<TeamPrize|null> {
+export async function nextAvailablePrize(teamid: ObjectId): Promise<TeamPrize | null> {
 	return TeamPrizeObject.findOne({
 		team: teamid,
 		awardedTo: undefined,
@@ -824,14 +832,14 @@ export async function nextAvailablePrize(teamid:ObjectId):Promise<TeamPrize|null
 }
 
 
-function getPrize(prizeid:ObjectId) {
+function getPrize(prizeid: ObjectId) {
 	return TeamPrizeObject.findOne({
 		_id: prizeid,
 		active: true
 	});
 }
 
-export function awardPrizeTo(prizeid:ObjectId, memberid:ObjectId) {
+export function awardPrizeTo(prizeid: ObjectId, memberid: ObjectId) {
 	return TeamPrizeObject.findByIdAndUpdate(prizeid, {
 		$set: {
 			awardedTo: memberid,
@@ -842,7 +850,7 @@ export function awardPrizeTo(prizeid:ObjectId, memberid:ObjectId) {
 	});
 }
 
-export function deactivePrize(prizeid:ObjectId) {
+export function deactivePrize(prizeid: ObjectId) {
 	return TeamPrizeObject.findByIdAndUpdate(prizeid, {
 		$set: {
 			active: false
@@ -852,31 +860,31 @@ export function deactivePrize(prizeid:ObjectId) {
 	});
 }
 
-async function getTeams(active:boolean|null) {
+async function getTeams(active: boolean | null) {
 	let limit = 20;
 	let query = {}
 	if (active !== null) {
-		query = {active: active}		
+		query = { active: active }
 	}
 
-	return TeamObject.find(query).limit(limit).sort({name: 1});
+	return TeamObject.find(query).limit(limit).sort({ name: 1 });
 }
 
 
-export async function getMemberById(memberId:ObjectId) {
+export async function getMemberById(memberId: ObjectId) {
 	return MembershipObject.findById(memberId);
 }
 
 
-export async function assignUserToMembersByContact(contact: string,contactType:string,userId:ObjectId) {
-	let memberships = await MembershipObject.find({ 
-		"contacts.contact": "contact", 
+export async function assignUserToMembersByContact(contact: string, contactType: string, userId: ObjectId) {
+	let memberships = await MembershipObject.find({
+		"contacts.contact": "contact",
 		user: null
 	})
 
-	for (let i = 0; i < memberships.length;i++) {
+	for (let i = 0; i < memberships.length; i++) {
 		let membership = memberships[i]
-		await MembershipObject.findByIdAndUpdate(membership._id,{user: userId})			
+		await MembershipObject.findByIdAndUpdate(membership._id, { user: userId })
 	}
 
 }
