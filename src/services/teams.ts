@@ -306,7 +306,7 @@ export function getMemberships(teamid: ObjectId): Promise<Membership[]> {
 	})
 		.sort({
 			name: 1,
-			email: 1
+			createdBy: 1
 		});
 }
 
@@ -666,7 +666,7 @@ export function incrementIdeaCount(memberid: ObjectId, count = 1) {
 	});
 }
 
-function updateTeam(teamid: ObjectId, update: Team) {
+export function updateTeam(teamid: ObjectId, update: Team) {
 	if (update.name) {
 		update.name = update.name.slice(0, 40).trim();
 	}

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -284,7 +284,7 @@ function getMemberships(teamid) {
     })
         .sort({
         name: 1,
-        email: 1
+        createdBy: 1
     });
 }
 exports.getMemberships = getMemberships;
@@ -558,6 +558,7 @@ function getBounties(teamid) {
         team: teamid
     };
     return team_1.TeamBountyObject.find(query)
+        .populate('createdBy')
         .populate('approvedIdeas')
         .populate({
         path: 'approvedIdeas',
@@ -642,6 +643,7 @@ function updateTeam(teamid, update) {
         new: true
     });
 }
+exports.updateTeam = updateTeam;
 function resetMember(member) {
     return __awaiter(this, void 0, void 0, function* () {
         yield membership_1.MembershipObject.findById(member._id, { user: null });

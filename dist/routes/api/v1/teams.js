@@ -16,10 +16,25 @@ const thanks_1 = require("../../../services/thanks");
 const users_1 = require("../../../services/users");
 const Types = require('mongoose').Types;
 exports.teamRoutes = (0, express_1.Router)();
-exports.teamRoutes.get('/', (req, res) => {
-    console.log('Not implemented yet');
-    res.status(500).send('Internal server error');
-});
+exports.teamRoutes.get('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let team = yield (0, teams_1.getTeam)(teamid);
+        res.json({
+            success: true,
+            error: '',
+            data: team
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.teamRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield (0, users_1.getUser)(req.userId);
@@ -42,6 +57,27 @@ exports.teamRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, fun
         let team = results[0];
         res.json({
             success: true,
+            data: team
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.put('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        let update = req.body;
+        console.log(update);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let team = yield (0, teams_1.updateTeam)(teamid, update);
+        res.json({
+            success: true,
+            error: '',
             data: team
         });
     }
