@@ -70,7 +70,6 @@ exports.teamRoutes.put('/:teamid', (req, res) => __awaiter(void 0, void 0, void 
         let teamid = new Types.ObjectId(req.params.teamid);
         let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         let update = req.body;
-        console.log(update);
         if (!(member === null || member === void 0 ? void 0 : member.owner)) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }

@@ -72,7 +72,6 @@ teamRoutes.put('/:teamid', async (req, res) => {
         let teamid = new Types.ObjectId(req.params.teamid)
         let member = await getMemberByUserId(teamid, req.userId)
         let update = req.body
-        console.log(update)
 
         if (!member?.owner) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")

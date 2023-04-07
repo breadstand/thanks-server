@@ -33,8 +33,14 @@ const teamSchema = new mongoose_1.Schema({
         type: Number,
         default: 15
     },
-    nudgeSubject: String,
-    nudgeMessage: String,
+    nudgeSubject: {
+        type: String,
+        default: ''
+    },
+    nudgeMessage: {
+        type: String,
+        default: ''
+    },
     nudgeAgainDays: {
         type: Number,
         default: 15
