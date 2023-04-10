@@ -2,6 +2,8 @@ import { Router } from "express";
 import sharp from "sharp";
 import { StoredImageObject } from "../../../models/image";
 import { deleteImageBuffer, loadImageFromAWS, saveImageToAWS } from "../../../services/images"
+import { getMemberByUserId } from "../../../services/teams";
+const Types = require('mongoose').Types
 const multer = require('multer')
 
 export var imageRoutes = Router()
@@ -14,7 +16,7 @@ const upload = multer()
 imageRoutes.post('/',
   upload.single('image'),
   async (req, res) => {
-
+    let teamid = req.body.teamid
     /* 
     This incoming file from multer will be like this:
     console.log(req.file)
@@ -37,6 +39,13 @@ imageRoutes.post('/',
           data: null
         })
       }
+
+      // Check that the user is authorized
+      let member = getMemberByUserId(teamid,req.userId)
+      if (!member) {
+        return res.send(404).send("Unauthorized: You do not belong to this team")
+      }
+
       const rawImage = await sharp(req.file.buffer).rotate()
       const metadata = await rawImage.metadata()
 
@@ -54,6 +63,7 @@ imageRoutes.post('/',
       // saveImageToAWS step.
       let image = new StoredImageObject({
         user: req.userId,
+        team: teamid,
         mimetype: 'image/jpeg',
         width: width,
         height: height,
@@ -85,13 +95,26 @@ imageRoutes.get('/:image', async (req, res) => {
       imageId = imageIdPieces[0]
       width = parseInt(imageIdPieces[1])
     }
+
+    // Load the image
     let image = await StoredImageObject.findOne({
-      _id: imageId,
-      user: req.userId
+      _id: imageId
     })
     if (!image) {
-      throw "Image not found"
+      return res.status(404).send("Not found");
     }
+
+    // Only members of the same team can view the image
+    if (image.team) {
+      let teamid = Types.ObjectId(String(image.team))
+      let currentMember = getMemberByUserId(teamid,req.userId)
+      if (!currentMember) {
+        return res.status(404).send('You do not appear to be a member of the same team')
+
+      }  
+    }
+
+
     let buffer = await loadImageFromAWS(image.key,width)
     if (!buffer) {
       return res.status(500).send('Server error')

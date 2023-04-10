@@ -17,10 +17,13 @@ const express_1 = require("express");
 const sharp_1 = __importDefault(require("sharp"));
 const image_1 = require("../../../models/image");
 const images_1 = require("../../../services/images");
+const teams_1 = require("../../../services/teams");
+const Types = require('mongoose').Types;
 const multer = require('multer');
 exports.imageRoutes = (0, express_1.Router)();
 const upload = multer();
 exports.imageRoutes.post('/', upload.single('image'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let teamid = req.body.teamid;
     /*
     This incoming file from multer will be like this:
     console.log(req.file)
@@ -41,6 +44,11 @@ exports.imageRoutes.post('/', upload.single('image'), (req, res) => __awaiter(vo
                 data: null
             });
         }
+        // Check that the user is authorized
+        let member = (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!member) {
+            return res.send(404).send("Unauthorized: You do not belong to this team");
+        }
         const rawImage = yield (0, sharp_1.default)(req.file.buffer).rotate();
         const metadata = yield rawImage.metadata();
         // width and height depend upon the orientation
@@ -56,6 +64,7 @@ exports.imageRoutes.post('/', upload.single('image'), (req, res) => __awaiter(vo
         // saveImageToAWS step.
         let image = new image_1.StoredImageObject({
             user: req.userId,
+            team: teamid,
             mimetype: 'image/jpeg',
             width: width,
             height: height,
@@ -87,12 +96,20 @@ exports.imageRoutes.get('/:image', (req, res) => __awaiter(void 0, void 0, void 
             imageId = imageIdPieces[0];
             width = parseInt(imageIdPieces[1]);
         }
+        // Load the image
         let image = yield image_1.StoredImageObject.findOne({
-            _id: imageId,
-            user: req.userId
+            _id: imageId
         });
         if (!image) {
-            throw "Image not found";
+            return res.status(404).send("Not found");
+        }
+        // Only members of the same team can view the image
+        if (image.team) {
+            let teamid = Types.ObjectId(String(image.team));
+            let currentMember = (0, teams_1.getMemberByUserId)(teamid, req.userId);
+            if (!currentMember) {
+                return res.status(404).send('You do not appear to be a member of the same team');
+            }
         }
         let buffer = yield (0, images_1.loadImageFromAWS)(image.key, width);
         if (!buffer) {

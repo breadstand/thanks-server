@@ -97,7 +97,7 @@ export async function findUserByContact(contact:string,contactType:string) {
 	return user;
 }
 
-async function deleteUser(userId: ObjectId) {
+export async function deleteUser(userId: ObjectId) {
 	let user = await UserObject.findById(userId);
 	if (!user) {
 		return;

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -695,6 +695,7 @@ function deleteTeam(teamid) {
         yield Promise.all(jobs);
     });
 }
+exports.deleteTeam = deleteTeam;
 function forEach(func) {
     return __awaiter(this, void 0, void 0, function* () {
         var processed = 0;
@@ -848,7 +849,7 @@ exports.getMemberById = getMemberById;
 function assignUserToMembersByContact(contact, contactType, userId) {
     return __awaiter(this, void 0, void 0, function* () {
         let memberships = yield membership_1.MembershipObject.find({
-            "contacts.contact": "contact",
+            "contacts.contact": contact,
             user: null
         });
         for (let i = 0; i < memberships.length; i++) {

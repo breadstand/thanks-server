@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeContact = exports.verifyUserContact = exports.findUserAndVerifyCode = exports.addContact = exports.sendCodeToVerifyContact = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
+exports.removeContact = exports.verifyUserContact = exports.findUserAndVerifyCode = exports.addContact = exports.sendCodeToVerifyContact = exports.deleteUser = exports.findUserByContact = exports.updateUser = exports.getUser = void 0;
 const change_1 = require("../models/change");
 const image_1 = require("../models/image");
 const user_1 = require("../models/user");
@@ -123,6 +123,7 @@ function deleteUser(userId) {
         }
     });
 }
+exports.deleteUser = deleteUser;
 ;
 function getStripeCustomerId(user, byUserId) {
     return __awaiter(this, void 0, void 0, function* () {

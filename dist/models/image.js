@@ -11,6 +11,10 @@ const imageSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'user'
     },
+    team: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'team'
+    },
     key: String,
     mimetype: String,
     originalname: String,

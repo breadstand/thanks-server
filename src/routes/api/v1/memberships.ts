@@ -107,7 +107,7 @@ membershipRoutes.put('/:id', async (req, res) => {
         }
 
         // 2. This is the user's membership and they are active
-        if (member.user == req.userId) {
+        if (String(member.user) == String(req.userId)) {
             authorized = true
         }
         if (authorized) {

@@ -719,7 +719,7 @@ function setMemberPrivileges(memberid: ObjectId, privileges: string[]) {
 }
 
 
-async function deleteTeam(teamid: ObjectId) {
+export async function deleteTeam(teamid: ObjectId) {
 	var team = await TeamObject.findById(teamid);
 	if (!team) {
 		return null;
@@ -879,7 +879,7 @@ export async function getMemberById(memberId: ObjectId) {
 
 export async function assignUserToMembersByContact(contact: string, contactType: string, userId: ObjectId) {
 	let memberships = await MembershipObject.find({
-		"contacts.contact": "contact",
+		"contacts.contact": contact,
 		user: null
 	})
 

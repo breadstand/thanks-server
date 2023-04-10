@@ -85,6 +85,24 @@ exports.teamRoutes.put('/:teamid', (req, res) => __awaiter(void 0, void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
+exports.teamRoutes.delete('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let team = yield (0, teams_1.deleteTeam)(teamid);
+        res.json({
+            success: true,
+            error: ''
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.teamRoutes.get('/:id/prizes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let teamid = new Types.ObjectId(req.params.id);
@@ -246,7 +264,6 @@ exports.teamRoutes.post('/:teamid/bounties', (req, res) => __awaiter(void 0, voi
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
         let savedBounty = yield (0, teams_1.createBounty)(bounty);
-        console.log(savedBounty);
         res.json({
             success: true,
             error: '',
@@ -271,7 +288,6 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid', (req, res) => __awaiter(vo
             return res.status(401).send("Unauthorized: Bounty posted to the wrong URL");
         }
         let updatedBounty = yield (0, teams_1.updateBounty)(bountyid, bounty);
-        console.log(updatedBounty);
         res.json({
             success: true,
             error: '',

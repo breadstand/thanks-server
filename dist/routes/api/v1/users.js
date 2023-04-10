@@ -50,6 +50,19 @@ exports.userRoutes.put('/:id', (req, res) => {
         res.status(500).send('Internal server error');
     });
 });
+exports.userRoutes.delete('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield (0, users_1.deleteUser)(req.userId);
+        res.json({
+            success: true,
+            error: ''
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.userRoutes.post('/:id/add-contact', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield user_1.UserObject.findById(req.userId);

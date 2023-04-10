@@ -15,6 +15,7 @@ This format mimics the form returned by the multer package.
 export interface StoredImage {
     created: Date,
     user: Types.ObjectId,
+    team: Types.ObjectId,
     key: string, // The name to use for storing in AWS 
     mimetype: string,
     originalname: string,
@@ -34,6 +35,10 @@ const imageSchema = new Schema<StoredImage>({
   user: {
     type: Schema.Types.ObjectId,
     ref: 'user'
+  },
+  team: {
+    type: Schema.Types.ObjectId,
+    ref: 'team'
   },
   key: String, // The name to use for storing in AWS 
   mimetype: String,

@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { TeamBounty, TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, getBounties, getMemberByUserId, getTeam, getUsersMemberships, updateBounty, updateTeam } from "../../../services/teams"
+import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, deleteTeam, getBounties, getMemberByUserId, getTeam, getUsersMemberships, updateBounty, updateTeam } from "../../../services/teams"
 import { pickTeamWinners } from "../../../services/thanks"
 import { getUser } from "../../../services/users"
 const Types = require('mongoose').Types
@@ -90,6 +90,31 @@ teamRoutes.put('/:teamid', async (req, res) => {
     }
 
 })
+
+
+
+teamRoutes.delete('/:teamid', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let member = await getMemberByUserId(teamid, req.userId)
+
+        if (!member?.owner) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.")
+        }
+
+        let team = await deleteTeam(teamid)
+        res.json({
+            success: true,
+            error: ''
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+
+})
+
 
 
 teamRoutes.get('/:id/prizes', async (req, res) => {
@@ -266,7 +291,6 @@ teamRoutes.post('/:teamid/bounties', async (req, res) => {
         }
 
         let savedBounty = await createBounty(bounty)
-        console.log(savedBounty)
         res.json({
             success: true,
             error: '',
@@ -297,7 +321,6 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
         }
 
         let updatedBounty = await updateBounty(bountyid, bounty)
-        console.log(updatedBounty)
         res.json({
             success: true,
             error: '',

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { User, UserObject } from '../../../models/user'
-import { addContact, removeContact, verifyUserContact } from '../../../services/users'
+import { addContact, deleteUser, removeContact, verifyUserContact } from '../../../services/users'
 export var userRoutes = Router()
 
 userRoutes.get('/:id',(req,res) => {
@@ -40,6 +40,22 @@ userRoutes.put('/:id',(req,res) => {
             console.log(err)
             res.status(500).send('Internal server error')
         })
+})
+
+
+
+userRoutes.delete('/:id',async (req,res) => {
+    try {
+        await deleteUser(req.userId)
+        res.json({
+            success: true,
+            error: ''
+        })
+    } catch(err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+
+    }
 })
 
 
