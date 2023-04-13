@@ -80,6 +80,7 @@ export interface TeamBounty {
     name: String,
     description: String,
     amount: Number,
+    reward: String,
     active: {
         type: Boolean,
         default: true
@@ -103,6 +104,7 @@ const teamBountySchema = new Schema<TeamBounty>({
     name: String,
     description: String,
     amount: Number,
+    reward: String,
     active: {
         type: Boolean,
         default: true

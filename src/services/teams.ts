@@ -449,6 +449,12 @@ function sendInvitation(teamMember: ObjectId, owner: Membership) {
 }
 
 export async function notifyTeam(teamid: ObjectId, subject: string, body: string) {
+    if (process.env.NODE_ENV == "development") {
+		console.log(subject)
+		console.log(body)
+	}
+
+
 	await getMemberships(teamid)
 		.then((members: Membership[]) => {
 			members.forEach(async member => {
@@ -580,9 +586,18 @@ async function importMembers(teamid: ObjectId, owner: Membership, text: string) 
 	return [imported, rejected];
 }
 
-export function createBounty(bounty: TeamBounty) {
+export async function createBounty(bounty: TeamBounty) {
 	let bountyObject = new TeamBountyObject(bounty);
-	return bountyObject.save();
+	let newBounty = await bountyObject.save();
+	
+	let createdBy = await MembershipObject.findById(newBounty.createdBy)
+
+
+	var subject = `New Bounty: ${newBounty.name}`;
+	var body = `${createdBy.name} created a new bounty!\nTitle: ${newBounty.name}\n${bounty.description}\nReward: ${newBounty.reward}\nDo you have any ideas? Maybe you can claim the reward.`;
+	notifyTeam(newBounty.team, subject, body);
+
+	return newBounty
 };
 
 export function getBounties(teamid: ObjectId) {

@@ -56,7 +56,7 @@ function sendToTeam(thanksid) {
             return;
         }
         var subject = `Thanks to ${thankspost.thanksTo.name}`;
-        var body = `Thanks to ${thankspost.thanksTo.name}\n for ${thankspost.thanksFor}\n\n-- ${thankspost.createdBy.name}`;
+        var body = `Thanks to ${thankspost.thanksTo.name} for ${thankspost.thanksFor}\n-- ${thankspost.createdBy.name}`;
         return (0, teams_1.notifyTeam)(thankspost.team._id, subject, body);
     }).catch(err => {
         console.log(err);
