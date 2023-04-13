@@ -43,9 +43,9 @@ exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0
 }));
 exports.membershipRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let member = yield (0, teams_1.getMemberByUserId)(req.body.teamid, req.userId);
+        let member = yield (0, teams_1.getMemberByUserId)(req.body.team, req.userId);
         if (!member || !member.owner) {
-            return res.status(404).send('Only team owners can add members');
+            return res.status(401).send('Only team owners can add members');
         }
         let newMember = yield (0, teams_1.addMemberByContact)(req.body.team, member, req.body.name, req.body.contacts[0].contact, req.body.contacts[0].contactType);
         res.status(200).send({
