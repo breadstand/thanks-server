@@ -16,6 +16,7 @@ export interface Membership {
     contacts:MembershipContact[],
     created: Date,
     lastUpdate: Date,
+    lastLogin: Date,
     details: string,
     sent: number,
     received: number,
@@ -61,6 +62,7 @@ const membershipSchema = new Schema<Membership>({
         type: Date,
         default: Date.now
     },
+    lastLogin: Date,
     details: String,
     sent: {
         type: Number,

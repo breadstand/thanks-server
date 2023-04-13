@@ -43,29 +43,11 @@ exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0
 }));
 exports.membershipRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let missingFields = [];
-        if (!req.body.contact) {
-            missingFields.push('contact');
+        let member = yield (0, teams_1.getMemberByUserId)(req.body.teamid, req.userId);
+        if (!member || !member.owner) {
+            return res.status(404).send('Only team owners can add members');
         }
-        if (!req.body.contactType) {
-            missingFields.push('contactType');
-        }
-        if (!req.body.owner) {
-            missingFields.push('owner');
-        }
-        if (missingFields.length > 0) {
-            return res.json({
-                success: false,
-                error: 'Missing: ' + missingFields.join(', '),
-                data: {}
-            });
-        }
-        let ownerId = req.body.owner;
-        let owner = yield (0, teams_1.getMemberById)(ownerId);
-        if (String(owner.user) != String(req.userId)) {
-            throw `User ${req.userId} is not ${owner.name}/${owner.user} `;
-        }
-        let newMember = yield (0, teams_1.addMemberByContact)(req.body.team, owner, req.body.name, req.body.contact, req.body.contactType);
+        let newMember = yield (0, teams_1.addMemberByContact)(req.body.team, member, req.body.name, req.body.contacts[0].contact, req.body.contacts[0].contactType);
         res.status(200).send({
             success: true,
             data: newMember
@@ -103,7 +85,7 @@ exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, voi
             authorized = true;
         }
         // 2. This is the user's membership and they are active
-        if (member.user == req.userId) {
+        if (String(member.user) == String(req.userId)) {
             authorized = true;
         }
         if (authorized) {

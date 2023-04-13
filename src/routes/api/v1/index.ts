@@ -109,6 +109,9 @@ apiRootRoutes.post('/verify-code', async (req, res) => {
                 await UserObject.deleteOne({_id: u._id})
             }
 
+            // Update last login for each member
+            await MembershipObject.updateMany({user: user._id},{$set:{lastLogin: new Date()}})
+
             let payload = { subject: user._id }
             user.password = ''
             res.json({

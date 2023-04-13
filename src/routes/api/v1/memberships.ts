@@ -39,33 +39,15 @@ membershipRoutes.get('/', async (req, res) => {
 
 membershipRoutes.post('/', async (req, res) => {
     try {
-        let missingFields = []
-        if (!req.body.contact) {
-            missingFields.push('contact')
-        }
-        if (!req.body.contactType) {
-            missingFields.push('contactType')
-        }
-        if (!req.body.owner) {
-            missingFields.push('owner')
-        }
-        if (missingFields.length > 0) {
-            return res.json({
-                success: false,
-                error: 'Missing: '+missingFields.join(', '),
-                data: {}
-            })
-        }
-
-        let ownerId = req.body.owner
-        let owner = await getMemberById(ownerId)
-        if (String(owner.user) != String(req.userId)) {
-            throw `User ${req.userId} is not ${owner.name}/${owner.user} `
+        let member = await getMemberByUserId(req.body.team,req.userId)
+        if (!member || !member.owner) {
+            return res.status(401).send('Only team owners can add members')
         }
         
-
-        let newMember = await addMemberByContact(req.body.team,
-            owner, req.body.name, req.body.contact,req.body.contactType)
+        let newMember = await addMemberByContact(req.body.team,member,
+            req.body.name, 
+            req.body.contacts[0].contact,
+            req.body.contacts[0].contactType)
         res.status(200).send({
             success: true,
             data: newMember

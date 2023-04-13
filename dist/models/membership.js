@@ -25,6 +25,7 @@ const membershipSchema = new mongoose_1.Schema({
         type: Date,
         default: Date.now
     },
+    lastLogin: Date,
     details: String,
     sent: {
         type: Number,

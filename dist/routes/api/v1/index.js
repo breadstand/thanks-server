@@ -106,6 +106,8 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
                 yield thankspost_1.ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id });
                 yield user_1.UserObject.deleteOne({ _id: u._id });
             }
+            // Update last login for each member
+            yield membership_1.MembershipObject.updateMany({ user: user._id }, { $set: { lastLogin: new Date() } });
             let payload = { subject: user._id };
             user.password = '';
             res.json({
