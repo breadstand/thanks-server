@@ -29,7 +29,7 @@ export interface User {
     backgroundImage:  ObjectId
     backgroundImageWidth: number
     backgroundImageHeight: number,
-    
+    defaultTeam: ObjectId
 }
 
 
@@ -86,6 +86,7 @@ const userSchema = new Schema<User>({
     },
     backgroundImageWidth: Number,
     backgroundImageHeight: Number, 
+    defaultTeam: Schema.Types.ObjectId
 });
 
 export const UserObject = model('user',userSchema);
