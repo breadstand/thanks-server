@@ -55,8 +55,8 @@ function sendToTeam(thanksid) {
         if (thankspost.postType != 'thanks') {
             return;
         }
-        var subject = `Thanks to ${thankspost.thanksTo.name}`;
-        var body = `Thanks to ${thankspost.thanksTo.name} for ${thankspost.thanksFor}\n-- ${thankspost.createdBy.name}`;
+        var subject = `Thanks to ${thankspost.thanksTo.name}!`;
+        var body = `${subject} ${thankspost.createdBy.name} thanked ${thankspost.thanksTo.name} for ${thankspost.thanksFor} https://thanks-a919c.web.app/`;
         return (0, teams_1.notifyTeam)(thankspost.team._id, subject, body);
     }).catch(err => {
         console.log(err);

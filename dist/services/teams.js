@@ -424,6 +424,10 @@ function sendInvitation(teamMember, owner) {
 }
 function notifyTeam(teamid, subject, body) {
     return __awaiter(this, void 0, void 0, function* () {
+        if (process.env.NODE_ENV == "development") {
+            console.log(subject);
+            console.log(body);
+        }
         yield getMemberships(teamid)
             .then((members) => {
             members.forEach((member) => __awaiter(this, void 0, void 0, function* () {
@@ -548,8 +552,15 @@ function importMembers(teamid, owner, text) {
     });
 }
 function createBounty(bounty) {
-    let bountyObject = new team_1.TeamBountyObject(bounty);
-    return bountyObject.save();
+    return __awaiter(this, void 0, void 0, function* () {
+        let bountyObject = new team_1.TeamBountyObject(bounty);
+        let newBounty = yield bountyObject.save();
+        let createdBy = yield membership_1.MembershipObject.findById(newBounty.createdBy);
+        var subject = `New Bounty: ${newBounty.name}`;
+        var body = `${createdBy.name} created a new bounty!\nTitle: ${newBounty.name}\n${bounty.description}\nReward: ${newBounty.reward}\nDo you have any ideas? Maybe you can claim the reward.`;
+        notifyTeam(newBounty.team, subject, body);
+        return newBounty;
+    });
 }
 exports.createBounty = createBounty;
 ;

@@ -56,6 +56,7 @@ const userSchema = new mongoose_1.Schema({
     },
     backgroundImageWidth: Number,
     backgroundImageHeight: Number,
+    defaultTeam: mongoose_1.Schema.Types.ObjectId
 });
 exports.UserObject = (0, mongoose_1.model)('user', userSchema);
 userSchema.index({ created: 1 });

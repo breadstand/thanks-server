@@ -19,14 +19,33 @@ exports.thanksPostsRoutes = (0, express_1.Router)();
 exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // We only want authorized team members to see the posts
-        let teamId = new Types.ObjectId(req.query.team);
-        let member = yield (0, teams_1.getMemberByUserId)(teamId, req.userId);
+        let teamid = new Types.ObjectId(req.query.team);
+        let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!member) {
             throw "User is not a member of team";
         }
-        let thanksPosts = yield (0, thanks_1.getThanksPosts)(teamId, null);
+        let limit = 100;
+        let query = {
+            team: teamid,
+            active: true
+        };
+        if (req.body.limit) {
+            let newLimit = parseInt(req.body.limit);
+            if (newLimit <= 100) {
+                limit = newLimit;
+            }
+        }
+        let thanksPosts = yield thankspost_1.ThanksPostObject.find(query)
+            .sort({
+            _id: -1
+        })
+            .limit(limit)
+            .populate('thanksTo')
+            .populate('prize')
+            .populate('createdBy');
         res.json({
             success: true,
+            error: '',
             data: thanksPosts
         });
     }

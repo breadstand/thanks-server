@@ -11,21 +11,44 @@ thanksPostsRoutes.get('/', async (req, res) => {
 
     try {
         // We only want authorized team members to see the posts
-        let teamId = new Types.ObjectId(req.query.team)
-        let member = await getMemberByUserId(teamId,req.userId)
+        let teamid = new Types.ObjectId(req.query.team)
+        let member = await getMemberByUserId(teamid,req.userId)
         if (!member) {
             throw "User is not a member of team"
         }
-        let thanksPosts = await getThanksPosts(teamId,null)
+
+        let limit = 100
+
+        let query: any = {
+            team: teamid,
+            active: true
+        };
+
+        if (req.body.limit) {
+            let newLimit = parseInt(req.body.limit)
+            if (newLimit <= 100) {
+                limit = newLimit
+            }
+        }
+
+        let thanksPosts = await ThanksPostObject.find(query)
+            .sort({
+                _id: -1
+            })
+            .limit(limit)
+            .populate('thanksTo')
+            .populate('prize')
+            .populate('createdBy');
+
         res.json({
             success: true,
+            error: '',
             data: thanksPosts
         })
     }
     catch (error) {
         console.log(error)
         res.status(500).send('Internal server error')
-
     }
 })
 

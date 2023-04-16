@@ -68,6 +68,7 @@ const teamBountySchema = new mongoose_1.Schema({
     name: String,
     description: String,
     amount: Number,
+    reward: String,
     active: {
         type: Boolean,
         default: true
