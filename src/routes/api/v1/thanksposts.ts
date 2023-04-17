@@ -121,20 +121,11 @@ thanksPostsRoutes.put('/:id/deactivate', async (req, res) => {
         // Only team owners or post owners can deactivePosts
         let member = await getMemberByUserId(post.team,req.userId)
         if (!member) {
-            return res.json({
-                success: false,
-                error: "You're not a member of the that posted this.",
-                data: {}
-            })
+            return res.status(401).send("You're not a member of the team that posted this.")
         }
 
-        if (!member.owner && String(member._id)==String(post.createdBy)) {
-            return res.json({
-                success: false,
-                error: "You're not authorized to deactivate this post. You're not the creator or team owner.",
-                data: {}
-            })
-
+        if (!member.owner && String(member._id) != String(post.createdBy)) {
+            return res.status(401).send("You are not the team owner or creator.")
         }
 
         let updatedPost = await deactivatePost(postId)
