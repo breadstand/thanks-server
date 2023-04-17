@@ -21,7 +21,6 @@ userRoutes.get('/:id',(req,res) => {
 })
 
 userRoutes.put('/:id',(req,res) => {
-
     let options = {
         returnDocument: 'after',
     }

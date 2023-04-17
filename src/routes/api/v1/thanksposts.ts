@@ -81,20 +81,12 @@ thanksPostsRoutes.post('/', async (req, res) => {
         // Only team owners or post owners can deactivePosts
         let member = await getMemberByUserId(newPost.team,req.userId)
         if (!member) {
-            return res.json({
-                success: false,
-                error: "You're not a member of the post's team.",
-                data: newPost
-            })
+            return res.status(401).send("You're not a member of the post's team.")
         }
+        newPost.createdBy = member._id
 
-        if (!member.owner && String(member._id)==String(newPost.createdBy)) {
-            return res.json({
-                success: false,
-                error: "You're not authorized to deactivate this post. You're not the creator or team owner.",
-                data: newPost
-            })
-
+        if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
+            return res.status(401).send("You're not the owner of this post or an owner.")
         }
 
         let thanksPost = await createThanksPost(newPost)
