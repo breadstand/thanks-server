@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { TeamBounty, TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, deleteTeam, getBounties, getMemberByUserId, getTeam, getUsersMemberships, updateBounty, updateTeam } from "../../../services/teams"
+import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, deleteTeam, getBounties, getBounty, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateBounty, updateTeam } from "../../../services/teams"
 import { pickTeamWinners } from "../../../services/thanks"
 import { getUser } from "../../../services/users"
 const Types = require('mongoose').Types
@@ -333,3 +333,37 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
     }
 })
 
+
+teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let bountyid = new Types.ObjectId(req.params.bountyid)
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        let bounty = await getBounty(bountyid)
+        if (!bounty) {
+            return res.status(404).send("No such bounty")
+        }
+
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty does not belong to team")
+        }
+        let subject = 'Bounty Reminder!'
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks-a919c.web.app/ to submit some ideas.`
+
+        notifyTeam(teamid,subject,body)
+
+        res.json({
+            success: true,
+            error: ''
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
