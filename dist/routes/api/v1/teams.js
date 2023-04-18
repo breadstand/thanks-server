@@ -327,3 +327,31 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', (req, res) =
         res.status(500).send('Internal server error');
     }
 }));
+exports.teamRoutes.post('/:teamid/bounties/:bountyid/ideas', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let bountyid = new Types.ObjectId(req.params.bountyid);
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+            return res.status(401).send("Unauthorized: You are not a team owner");
+        }
+        let bounty = yield (0, teams_1.getBounty)(bountyid);
+        if (!bounty) {
+            return res.status(404).send("No such bounty");
+        }
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty does not belong to team");
+        }
+        bounty.ideas.push(req.body.postid);
+        yield bounty.save();
+        res.json({
+            success: true,
+            error: '',
+            data: bounty
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));

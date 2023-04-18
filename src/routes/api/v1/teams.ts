@@ -374,7 +374,6 @@ teamRoutes.post('/:teamid/bounties/:bountyid/ideas', async (req, res) => {
     try {
         let teamid = new Types.ObjectId(req.params.teamid)
         let bountyid = new Types.ObjectId(req.params.bountyid)
-        console.log(req.body)
 
         let usersMembership = await getMemberByUserId(teamid, req.userId)
         if (!usersMembership?.owner) {

@@ -73,6 +73,10 @@ const teamBountySchema = new mongoose_1.Schema({
         type: Boolean,
         default: true
     },
+    ideas: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'thanks_post'
+        }],
     approvedIdeas: [{
             type: mongoose_1.Schema.Types.ObjectId,
             ref: 'thanks_post'

@@ -578,6 +578,13 @@ function getBounties(teamid) {
             model: 'membership'
         }
     })
+        .populate({
+        path: 'ideas',
+        populate: {
+            path: 'createdBy',
+            model: 'membership'
+        }
+    })
         .sort({
         name: 1
     });
