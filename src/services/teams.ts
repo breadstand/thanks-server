@@ -614,6 +614,13 @@ export function getBounties(teamid: ObjectId) {
 				model: 'membership'
 			}
 		})
+		.populate({
+			path: 'ideas',
+			populate: {
+				path: 'createdBy',
+				model: 'membership'
+			}
+		})
 		.sort({
 				name: 1
 			});

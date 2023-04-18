@@ -88,7 +88,6 @@ thanksPostsRoutes.post('/', async (req, res) => {
         if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
             return res.status(401).send("You're not the owner of this post or an owner.")
         }
-
         let thanksPost = await createThanksPost(newPost)
         res.json({
             success: true,

@@ -299,3 +299,31 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid', (req, res) => __awaiter(vo
         res.status(500).send('Internal server error');
     }
 }));
+exports.teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid);
+        let bountyid = new Types.ObjectId(req.params.bountyid);
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+            return res.status(401).send("Unauthorized: You are not a team owner");
+        }
+        let bounty = yield (0, teams_1.getBounty)(bountyid);
+        if (!bounty) {
+            return res.status(404).send("No such bounty");
+        }
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty does not belong to team");
+        }
+        let subject = 'Bounty Reminder!';
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks-a919c.web.app/ to submit some ideas.`;
+        (0, teams_1.notifyTeam)(teamid, subject, body);
+        res.json({
+            success: true,
+            error: ''
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));

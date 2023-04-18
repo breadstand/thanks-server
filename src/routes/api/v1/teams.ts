@@ -367,3 +367,39 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
         res.status(500).send('Internal server error')
     }
 })
+
+
+
+teamRoutes.post('/:teamid/bounties/:bountyid/ideas', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let bountyid = new Types.ObjectId(req.params.bountyid)
+        console.log(req.body)
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        let bounty = await getBounty(bountyid)
+        if (!bounty) {
+            return res.status(404).send("No such bounty")
+        }
+
+        if (String(bounty.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: Bounty does not belong to team")
+        }
+
+        bounty.ideas.push(req.body.postid)
+        await bounty.save()
+        res.json({
+            success: true,
+            error: '',
+            data: bounty
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})

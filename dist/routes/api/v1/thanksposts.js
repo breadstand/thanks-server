@@ -81,18 +81,11 @@ exports.thanksPostsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void
         // Only team owners or post owners can deactivePosts
         let member = yield (0, teams_1.getMemberByUserId)(newPost.team, req.userId);
         if (!member) {
-            return res.json({
-                success: false,
-                error: "You're not a member of the post's team.",
-                data: newPost
-            });
+            return res.status(401).send("You're not a member of the post's team.");
         }
-        if (!member.owner && String(member._id) == String(newPost.createdBy)) {
-            return res.json({
-                success: false,
-                error: "You're not authorized to deactivate this post. You're not the creator or team owner.",
-                data: newPost
-            });
+        newPost.createdBy = member._id;
+        if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
+            return res.status(401).send("You're not the owner of this post or an owner.");
         }
         let thanksPost = yield (0, thanks_1.createThanksPost)(newPost);
         res.json({
@@ -120,18 +113,10 @@ exports.thanksPostsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0,
         // Only team owners or post owners can deactivePosts
         let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
         if (!member) {
-            return res.json({
-                success: false,
-                error: "You're not a member of the that posted this.",
-                data: {}
-            });
+            return res.status(401).send("You're not a member of the team that posted this.");
         }
-        if (!member.owner && String(member._id) == String(post.createdBy)) {
-            return res.json({
-                success: false,
-                error: "You're not authorized to deactivate this post. You're not the creator or team owner.",
-                data: {}
-            });
+        if (!member.owner && String(member._id) != String(post.createdBy)) {
+            return res.status(401).send("You are not the team owner or creator.");
         }
         let updatedPost = yield (0, thanks_1.deactivatePost)(postId);
         res.json({

@@ -412,7 +412,7 @@ function addContact(user, contact, contactType) {
             user.contacts.push(newContact);
         }
         yield user_1.UserObject.findByIdAndUpdate(user._id, { contacts: user.contacts });
-        yield notifyUser(user._id, 'Verification Code', 'Here is your breadstand.com verification code: ' + verifyCode +
+        yield notifyUser(user._id, 'Verification Code', 'Here is your https://thanks-a919c.web.app/ verification code: ' + verifyCode +
             '. If you did not request a code, contact Breadstand.');
         return user;
     });

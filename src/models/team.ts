@@ -85,6 +85,7 @@ export interface TeamBounty {
         type: Boolean,
         default: true
     },
+    ideas: ObjectId[]
     approvedIdeas: ObjectId[]
 }
 
@@ -109,6 +110,10 @@ const teamBountySchema = new Schema<TeamBounty>({
         type: Boolean,
         default: true
     },
+    ideas: [{
+        type: Schema.Types.ObjectId, 
+        ref: 'thanks_post'
+    }],
     approvedIdeas: [{
         type: Schema.Types.ObjectId, 
         ref: 'thanks_post'
