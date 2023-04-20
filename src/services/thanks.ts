@@ -177,7 +177,7 @@ export async function removeBounty(postid:ObjectId,bountyid:ObjectId) {
 
 
 
-async function figureOutDateRange(team: Team, now: Date = new Date()) {
+export async function figureOutDateRange(team: Team, now: Date = new Date()) {
 	/*
 		The goal of this is to figure out the date range to select a 
 		winning thanks from. Basically this is the dates of the set.

@@ -2,8 +2,9 @@ import { Router } from "express"
 import { TeamBounty, TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
 import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, deleteTeam, getBounties, getBounty, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateBounty, updateTeam } from "../../../services/teams"
-import { pickTeamWinners } from "../../../services/thanks"
+import { figureOutDateRange, pickTeamWinners } from "../../../services/thanks"
 import { getUser } from "../../../services/users"
+import { ThanksSetObject } from "../../../models/thankspost"
 const Types = require('mongoose').Types
 
 export var teamRoutes = Router()
@@ -397,6 +398,67 @@ teamRoutes.post('/:teamid/bounties/:bountyid/ideas', async (req, res) => {
             data: bounty
         })
 
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+
+teamRoutes.get('/:id/sets', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+
+        // Only team members can see the sets
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership) {
+            return res.status(401).send('You are not a member of this team.')
+        }
+
+        let sets = await ThanksSetObject.find({team: teamid})
+        res.json({
+            success: true,
+            error: '',
+            data: sets
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+teamRoutes.get('/:id/getNextSet', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+
+        // Only team members can see the sets
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send('You are not an owner of this team.')
+        }
+
+        let team = await getTeam(teamid)
+        if (!team) {
+            return res.status(404).send('Team not found')
+        }
+        let dateRange = await figureOutDateRange(team)
+
+        let sets = await ThanksSetObject.find({team: teamid})
+        res.json({
+            success: true,
+            error: '',
+            data: [
+                {
+                    _id: '',
+                    created: new Date(),
+                    team: teamid,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }
+            ]
+        })
     } catch (err) {
         console.log(err)
         res.status(500).send('Internal server error')
