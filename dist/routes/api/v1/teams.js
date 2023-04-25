@@ -14,6 +14,7 @@ const express_1 = require("express");
 const teams_1 = require("../../../services/teams");
 const thanks_1 = require("../../../services/thanks");
 const users_1 = require("../../../services/users");
+const thankspost_1 = require("../../../models/thankspost");
 const Types = require('mongoose').Types;
 exports.teamRoutes = (0, express_1.Router)();
 exports.teamRoutes.get('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -348,6 +349,59 @@ exports.teamRoutes.post('/:teamid/bounties/:bountyid/ideas', (req, res) => __awa
             success: true,
             error: '',
             data: bounty
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.get('/:id/sets', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.id);
+        // Only team members can see the sets
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!usersMembership) {
+            return res.status(401).send('You are not a member of this team.');
+        }
+        let sets = yield thankspost_1.ThanksSetObject.find({ team: teamid });
+        res.json({
+            success: true,
+            error: '',
+            data: sets
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.get('/:id/getNextSet', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.id);
+        // Only team members can see the sets
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+            return res.status(401).send('You are not an owner of this team.');
+        }
+        let team = yield (0, teams_1.getTeam)(teamid);
+        if (!team) {
+            return res.status(404).send('Team not found');
+        }
+        let dateRange = yield (0, thanks_1.figureOutDateRange)(team);
+        let sets = yield thankspost_1.ThanksSetObject.find({ team: teamid });
+        res.json({
+            success: true,
+            error: '',
+            data: [
+                {
+                    _id: '',
+                    created: new Date(),
+                    team: teamid,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }
+            ]
         });
     }
     catch (err) {

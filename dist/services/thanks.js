@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.pickTeamWinners = exports.removeBounty = exports.approveBounty = exports.getThanksPosts = exports.createThanksPost = void 0;
+exports.deactivatePost = exports.pickTeamWinners = exports.figureOutDateRange = exports.removeBounty = exports.approveBounty = exports.getThanksPosts = exports.createThanksPost = void 0;
 const team_1 = require("../models/team");
 const thankspost_1 = require("../models/thankspost");
 const teams_1 = require("./teams");
@@ -226,6 +226,7 @@ function figureOutDateRange(team, now = new Date()) {
         return daterange;
     });
 }
+exports.figureOutDateRange = figureOutDateRange;
 function getMostRecentSet(teamid) {
     return __awaiter(this, void 0, void 0, function* () {
         var recentsets = yield thankspost_1.ThanksSetObject.find({
