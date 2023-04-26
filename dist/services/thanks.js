@@ -237,27 +237,26 @@ function getMostRecentSet(teamid) {
         return recentsets[0];
     });
 }
-function notifyTeamOfWinners(teamid) {
+function notifyTeamOfWinners(results, teamid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        var lastset = yield getMostRecentSet(teamid);
-        if (!lastset) {
-            console.log("Warning: getMostRecentSet() returned null");
-            return;
-        }
-        var winners = yield getWinners(lastset._id);
-        for (var i = 0; i < winners.length; i++) {
+        for (var i = 0; i < results.winningPostsWithPrizes.length; i++) {
             var message = "We just picked a th8nks winner! ";
-            let createdBy = winners[i].createdBy;
+            let createdBy = results.winningPostsWithPrizes[i].createdBy;
             if (!createdBy) {
                 continue;
             }
-            let thanksTo = winners[i].thanksTo;
-            message += `${thanksTo.name} for ${winners[i].thanksFor} [from: ${createdBy.name}]`;
-            let prize = winners[i].prize;
+            let thanksTo = results.winningPostsWithPrizes[i].thanksTo;
+            let subject = "Thanks Winner Picked";
+            message += `${thanksTo.name} for ${results.winningPostsWithPrizes[i].thanksFor} [from: ${createdBy.name}]`;
+            let prize = results.winningPostsWithPrizes[i].prize;
             if (prize === null || prize === void 0 ? void 0 : prize.name) {
                 message += " Prize: " + prize.name;
             }
-            yield (0, teams_1.notifyTeam)(teamid, "Thanks Winner Picked", message);
+            results.messages.push(subject);
+            results.messages.push(message);
+            if (!dryRun) {
+                yield (0, teams_1.notifyTeam)(teamid, subject, message);
+            }
         }
     });
 }
@@ -287,69 +286,104 @@ function deleteSet(setid) {
     return ThanksSet.findByIdAndDelete(setid);
 }
 */
-function makePostAWinner(postid, setid) {
+function makePostAWinner(results, postid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        var thankspost = yield thankspost_1.ThanksPostObject.findById(postid);
+        let thankspost = yield thankspost_1.ThanksPostObject.findById(postid)
+            .populate('createdBy')
+            .populate('thanksTo');
         if (!thankspost) {
             return;
         }
-        var prize = yield (0, teams_1.nextAvailablePrize)(thankspost.team);
+        // Find next available prize
+        let prize = results.prizes.find(p => !p.awardedTo);
         if (!prize) {
             return;
         }
-        yield (0, teams_1.awardPrizeTo)(prize._id, thankspost.thanksTo);
+        prize.awardedTo = thankspost._id;
+        prize.awardedOn = new Date();
         thankspost.winner = true;
-        thankspost.thanksSet = setid;
         thankspost.prize = prize._id;
-        yield thankspost.save();
+        results.winningPostsWithPrizes.push(thankspost);
     });
 }
-function pickTeamWinners(teamid, numberOfMonths = 1) {
+function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        let prizecount = 0;
+        let results = new thankspost_1.PickWinnersResults();
         let team = yield (0, teams_1.getTeam)(teamid);
         if (!team) {
             throw "Team not found: " + teamid;
-            return null;
+            return results;
         }
         // Step 1: Figure out if winners should be picked.
         // Basically, we pick once a month and if a month hasn't passed
         // we shouldn't pick any winners.
         // Figure out which month/date rane to pick winners for
         var daterange = yield figureOutDateRange(team);
+        results.start = daterange.start;
+        results.end = daterange.end;
+        results.monthsCovered = daterange.monthsCovered;
         if (!daterange || daterange.monthsCovered < numberOfMonths) {
-            return null;
+            results.messages.push(`Debug: No winners selected because it's been less than ${numberOfMonths} since the last winners selection.`);
+            return results;
         }
         // Step 2: Figure out what prizes are available.
         // The number of prizes tells us how many winners to pick.
-        let prizes = yield (0, teams_1.availablePrizes)(teamid);
-        prizecount = prizes.length;
+        results.prizes = yield (0, teams_1.availablePrizes)(teamid);
+        let prizecount = results.prizes.length;
         if (!prizecount) {
-            (0, teams_1.notifyOwners)(teamid, "No Prizes Selected", "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-                "To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
-            return null;
+            let subject = "No Prizes Selected";
+            let body = "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
+                "To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.";
+            results.messages.push(subject);
+            results.messages.push(body);
+            if (!dryRun) {
+                (0, teams_1.notifyOwners)(teamid, subject, body);
+            }
+            return results;
             //throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
         }
-        // Step 3: Create a new set
-        var set = yield createSet(teamid, daterange.start, daterange.end);
         // Step 4: Find thanksposts within that daterange
-        var winningThanks = yield thankspost_1.ThanksPostObject.aggregate([{
+        results.winningPosts = yield thankspost_1.ThanksPostObject.aggregate([{
                 $match: {
                     team: teamid,
                     created: {
-                        $gte: set.startDate,
-                        $lt: set.endDate
+                        $gte: results.start,
+                        $lt: results.end
                     },
                     active: true,
                     postType: 'thanks'
                 }
             }]).sample(prizecount);
         // Step 5: Award prizes to those winners
-        for (var i = 0; i < winningThanks.length; i++) {
-            yield makePostAWinner(winningThanks[i]._id, set._id);
+        for (var i = 0; i < results.winningPosts.length; i++) {
+            yield makePostAWinner(results, results.winningPosts[i]._id, dryRun);
         }
-        notifyTeamOfWinners(teamid);
-        return set;
+        notifyTeamOfWinners(results, teamid, dryRun);
+        // Save Pick Winners Results
+        if (!dryRun) {
+            results.set = yield createSet(teamid, daterange.start, daterange.end);
+            for (let i = 0; i < results.prizes.length; i++) {
+                let prize = results.prizes[i];
+                yield team_1.TeamPrizeObject.findByIdAndUpdate(prize._id, {
+                    $set: {
+                        awardedTo: prize.awardedTo,
+                        awardedOn: prize.awardedOn
+                    }
+                });
+            }
+            for (let i = 0; i < results.winningPostsWithPrizes.length; i++) {
+                let post = results.winningPostsWithPrizes[i];
+                post.thanksSet = results.set._id;
+                yield thankspost_1.ThanksPostObject.findByIdAndUpdate(post._id, {
+                    $set: {
+                        winner: true,
+                        thanksSet: post.thanksSet,
+                        prize: post.prize
+                    }
+                });
+            }
+        }
+        return results;
     });
 }
 exports.pickTeamWinners = pickTeamWinners;

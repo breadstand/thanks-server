@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ThanksPostObject = exports.ThanksSetObject = void 0;
+exports.PickWinnersResults = exports.ThanksPostObject = exports.ThanksSetObject = void 0;
 const mongoose_1 = require("mongoose");
 const thanksSetSchema = new mongoose_1.Schema({
     created: {
@@ -64,3 +64,16 @@ thanksPostSchema.index({ team: 1 });
 thanksPostSchema.index({ created: 1 });
 thanksPostSchema.index({ thanksFor: 1, winner: 1 });
 thanksPostSchema.index({ team: 1, set: 1 });
+class PickWinnersResults {
+    constructor() {
+        this.start = new Date();
+        this.end = new Date();
+        this.monthsCovered = 0;
+        this.prizes = [];
+        this.winningPosts = [];
+        this.winningPostsWithPrizes = [];
+        this.set = undefined;
+        this.messages = [];
+    }
+}
+exports.PickWinnersResults = PickWinnersResults;

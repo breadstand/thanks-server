@@ -194,8 +194,12 @@ teamRoutes.post('/:teamid/prizes', async (req, res) => {
     }
 })
 
-teamRoutes.get('/:teamid/pick-winners', async (req, res) => {
+teamRoutes.post('/:teamid/pick-winners', async (req, res) => {
     try {
+        let dryRun = false
+        if (req.body.dryRun) {
+            dryRun = true
+        }
         let teamid = new Types.ObjectId(req.params.teamid)
         // Check the user is a team owner
 
@@ -204,11 +208,11 @@ teamRoutes.get('/:teamid/pick-winners', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not a team owner")
         }
 
-        let set = await pickTeamWinners(teamid, 0)
+        let results = await pickTeamWinners(teamid, 0, dryRun)
         res.json({
             success: true,
             error: '',
-            data: set
+            data: results
         })
     } catch (err) {
         console.log(err)
@@ -446,6 +450,43 @@ teamRoutes.get('/:id/getNextSet', async (req, res) => {
         let dateRange = await figureOutDateRange(team)
 
         let sets = await ThanksSetObject.find({team: teamid})
+        res.json({
+            success: true,
+            error: '',
+            data: [
+                {
+                    _id: '',
+                    created: new Date(),
+                    team: teamid,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }
+            ]
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+teamRoutes.get('/:id/testPickingWinners', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.id)
+
+        // Only team members can see the sets
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send('You are not an owner of this team.')
+        }
+
+        let team = await getTeam(teamid)
+        if (!team) {
+            return res.status(404).send('Team not found')
+        }
+        let dateRange = await figureOutDateRange(team)
+
+        
         res.json({
             success: true,
             error: '',

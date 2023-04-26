@@ -797,7 +797,7 @@ function createPrize(prize) {
     return p.save();
 }
 exports.createPrize = createPrize;
-function availablePrizes(teamid) {
+function availablePrizes(teamid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
         return team_1.TeamPrizeObject.find({
             team: teamid,
@@ -809,15 +809,30 @@ function availablePrizes(teamid) {
     });
 }
 exports.availablePrizes = availablePrizes;
-function nextAvailablePrize(teamid) {
+function nextAvailablePrize(results, teamid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        return team_1.TeamPrizeObject.findOne({
+        console.log('nextAvailablePrize() deprecated');
+        let prizes = yield team_1.TeamPrizeObject.find({
             team: teamid,
             awardedTo: undefined,
             active: true
         }).sort({
             name: 1
         });
+        if (!prizes) {
+            return null;
+        }
+        if (dryRun) {
+            // See if prize was already awarded, if not, use it.
+            for (let i = 0; i < prizes.length; i++) {
+                let found = results.prizes.find((p) => (String(p._id) == String(prizes[i]._id)));
+                if (!found) {
+                    return prizes[i];
+                }
+            }
+            return null;
+        }
+        return prizes[0];
     });
 }
 exports.nextAvailablePrize = nextAvailablePrize;
@@ -827,14 +842,25 @@ function getPrize(prizeid) {
         active: true
     });
 }
-function awardPrizeTo(prizeid, memberid) {
-    return team_1.TeamPrizeObject.findByIdAndUpdate(prizeid, {
-        $set: {
-            awardedTo: memberid,
-            awardedOn: new Date()
+function awardPrizeTo(results, prizeid, memberid, dryRun = false) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log('awardPrizeTo() deprecated');
+        let foundPrize = results.prizes.find(p => (String(p._id) == String(prizeid)));
+        if (!foundPrize) {
+            return;
         }
-    }, {
-        new: true
+        foundPrize.awardedTo = memberid;
+        foundPrize.awardedOn = new Date();
+        if (!dryRun) {
+            yield team_1.TeamPrizeObject.findByIdAndUpdate(prizeid, {
+                $set: {
+                    awardedTo: memberid,
+                    awardedOn: new Date()
+                }
+            }, {
+                new: true
+            });
+        }
     });
 }
 exports.awardPrizeTo = awardPrizeTo;

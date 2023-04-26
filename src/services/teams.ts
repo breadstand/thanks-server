@@ -8,6 +8,7 @@ import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
 import { findUserByContact } from "./users";
 import { sanitizeEmail, sanitizeName, sanitizePhone } from "./utils";
+import { PickWinnersResults } from "../models/thankspost";
 
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
 	apiVersion: process.env.STRIPE_API_VERSION
@@ -834,7 +835,7 @@ export function createPrize(prize: TeamPrize) {
 	return p.save();
 }
 
-export async function availablePrizes(teamid: ObjectId): Promise<TeamPrize[]> {
+export async function availablePrizes(teamid: ObjectId,dryRun=true): Promise<TeamPrize[]> {
 	return TeamPrizeObject.find({
 		team: teamid,
 		awardedTo: { $exists: false },
@@ -844,14 +845,31 @@ export async function availablePrizes(teamid: ObjectId): Promise<TeamPrize[]> {
 	});
 }
 
-export async function nextAvailablePrize(teamid: ObjectId): Promise<TeamPrize | null> {
-	return TeamPrizeObject.findOne({
-		team: teamid,
-		awardedTo: undefined,
-		active: true
-	}).sort({
-		name: 1
-	});
+export async function nextAvailablePrize(results: PickWinnersResults,teamid: ObjectId,dryRun = true): Promise<TeamPrize | null> {
+	console.log('nextAvailablePrize() deprecated')
+	let prizes = await TeamPrizeObject.find({
+			team: teamid,
+			awardedTo: undefined,
+			active: true
+		}).sort({
+			name: 1
+		});	
+
+	if (!prizes) {
+		return null
+	}
+	if (dryRun) {
+		// See if prize was already awarded, if not, use it.
+		for (let i = 0; i < prizes.length;i++) {
+			let found = results.prizes.find( (p) => (String(p._id) == String(prizes[i]._id)) )
+			if (!found) {
+				return prizes[i]
+			}
+		}
+		return null 
+	}
+	return prizes[0]
+	
 }
 
 
@@ -862,15 +880,25 @@ function getPrize(prizeid: ObjectId) {
 	});
 }
 
-export function awardPrizeTo(prizeid: ObjectId, memberid: ObjectId) {
-	return TeamPrizeObject.findByIdAndUpdate(prizeid, {
-		$set: {
-			awardedTo: memberid,
-			awardedOn: new Date()
-		}
-	}, {
-		new: true
-	});
+export async function awardPrizeTo(results:PickWinnersResults,prizeid: ObjectId, memberid: ObjectId,dryRun=false) {
+	console.log('awardPrizeTo() deprecated')
+	let foundPrize = results.prizes.find( p => (String(p._id) == String(prizeid)))
+	if (!foundPrize) {
+		return 
+	}
+	foundPrize.awardedTo = memberid
+	foundPrize.awardedOn = new Date()
+
+	if (!dryRun) {
+		await TeamPrizeObject.findByIdAndUpdate(prizeid, {
+			$set: {
+				awardedTo: memberid,
+				awardedOn: new Date()
+			}
+		}, {
+			new: true
+		});	
+	}
 }
 
 export function deactivePrize(prizeid: ObjectId) {

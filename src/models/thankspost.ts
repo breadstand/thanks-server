@@ -8,7 +8,7 @@ export interface ThanksSet {
     created: Date,
     team: ObjectId,    
     startDate: Date,
-    endDate: Date,
+    endDate: Date
 }
 
 const thanksSetSchema = new Schema<ThanksSet>({
@@ -101,3 +101,13 @@ thanksPostSchema.index({created: 1});
 thanksPostSchema.index({thanksFor: 1,winner: 1});
 thanksPostSchema.index({team: 1,set: 1});
 
+export class PickWinnersResults {
+    start: Date = new Date()
+    end: Date = new Date()
+    monthsCovered = 0
+    prizes: TeamPrize[] = []
+    winningPosts: ThanksPost[] = []
+    winningPostsWithPrizes: ThanksPost[] = []
+    set: ThanksSet|undefined = undefined
+    messages: string[] = []
+}

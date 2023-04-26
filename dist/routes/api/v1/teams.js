@@ -178,17 +178,22 @@ exports.teamRoutes.post('/:teamid/prizes', (req, res) => __awaiter(void 0, void 
 }));
 exports.teamRoutes.get('/:teamid/pick-winners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        let dryRun = false;
+        if (req.body.dryRun) {
+            dryRun = true;
+        }
+        console.log('dryRun:', dryRun);
         let teamid = new Types.ObjectId(req.params.teamid);
         // Check the user is a team owner
         let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
-        let set = yield (0, thanks_1.pickTeamWinners)(teamid, 0);
+        let results = yield (0, thanks_1.pickTeamWinners)(teamid, 0, dryRun);
         res.json({
             success: true,
             error: '',
-            data: set
+            data: results
         });
     }
     catch (err) {
@@ -390,6 +395,38 @@ exports.teamRoutes.get('/:id/getNextSet', (req, res) => __awaiter(void 0, void 0
         }
         let dateRange = yield (0, thanks_1.figureOutDateRange)(team);
         let sets = yield thankspost_1.ThanksSetObject.find({ team: teamid });
+        res.json({
+            success: true,
+            error: '',
+            data: [
+                {
+                    _id: '',
+                    created: new Date(),
+                    team: teamid,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }
+            ]
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.get('/:id/testPickingWinners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let teamid = new Types.ObjectId(req.params.id);
+        // Only team members can see the sets
+        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+            return res.status(401).send('You are not an owner of this team.');
+        }
+        let team = yield (0, teams_1.getTeam)(teamid);
+        if (!team) {
+            return res.status(404).send('Team not found');
+        }
+        let dateRange = yield (0, thanks_1.figureOutDateRange)(team);
         res.json({
             success: true,
             error: '',

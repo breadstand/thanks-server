@@ -1,7 +1,7 @@
 import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
-import { Team, TeamBounty, TeamBountyObject, TeamPrize } from "../models/team";
-import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject } from "../models/thankspost";
+import { Team, TeamBounty, TeamBountyObject, TeamPrize, TeamPrizeObject } from "../models/team";
+import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject, PickWinnersResults } from "../models/thankspost";
 import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
 
 
@@ -111,8 +111,8 @@ export function getThanksPosts(teamid: ObjectId, filter: any) {
 }
 
 
-export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
-	let post:ThanksPost|null = await ThanksPostObject.findByIdAndUpdate({
+export async function approveBounty(postid: ObjectId, bountyid: ObjectId) {
+	let post: ThanksPost | null = await ThanksPostObject.findByIdAndUpdate({
 		_id: postid,
 		postType: 'idea'
 	}, {
@@ -126,7 +126,7 @@ export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
 		return null
 	}
 
-	let bounty:TeamBounty|null = await TeamBountyObject.findByIdAndUpdate({
+	let bounty: TeamBounty | null = await TeamBountyObject.findByIdAndUpdate({
 		_id: bountyid
 	}, {
 		$push: {
@@ -141,7 +141,7 @@ export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
 	}
 	let subject = 'Bounty Approved: ' + post.idea;
 	let message = 'Your idea was approved for a bounty.\n' +
-		'Idea: ' + post.idea+
+		'Idea: ' + post.idea +
 		'Bounty: ' + bounty.name +
 		'Amount: ' + bounty.amount;
 	if (!post.createdBy) {
@@ -151,21 +151,21 @@ export async function approveBounty(postid:ObjectId, bountyid:ObjectId) {
 	return post
 };
 
-export async function removeBounty(postid:ObjectId,bountyid:ObjectId) {
+export async function removeBounty(postid: ObjectId, bountyid: ObjectId) {
 	let post = await ThanksPostObject.findById(postid);
 	if (post) {
-		let el = post.approvedBounties.findIndex( el => el.toString() == bountyid.toString());
+		let el = post.approvedBounties.findIndex(el => el.toString() == bountyid.toString());
 		if (el >= 0) {
-			post.approvedBounties.splice(el,1);		
+			post.approvedBounties.splice(el, 1);
 		}
 		await post.save();
 	}
 
 	let bounty = await TeamBountyObject.findById(bountyid);
 	if (bounty) {
-		let el = bounty.approvedIdeas.findIndex( el => el.toString() == postid.toString());
+		let el = bounty.approvedIdeas.findIndex(el => el.toString() == postid.toString());
 		if (el >= 0) {
-			bounty.approvedIdeas.splice(el,1);		
+			bounty.approvedIdeas.splice(el, 1);
 		}
 		await bounty.save();
 	}
@@ -247,29 +247,28 @@ async function getMostRecentSet(teamid: ObjectId): Promise<ThanksSet | null> {
 	return recentsets[0];
 }
 
-async function notifyTeamOfWinners(teamid: ObjectId) {
-	var lastset = await getMostRecentSet(teamid);
-	if (!lastset) {
-		console.log("Warning: getMostRecentSet() returned null")
-		return
-	}
-	var winners = await getWinners(lastset._id);
+async function notifyTeamOfWinners(results:PickWinnersResults,teamid: ObjectId,dryRun = true) {
 
-	for (var i = 0; i < winners.length; i++) {
-		var message = "We just picked a th8nks winner! ";
+	for (var i = 0; i < results.winningPostsWithPrizes.length; i++) {
+		var message = "We just picked a Thanks winner! ";
 
-		let createdBy = winners[i].createdBy as Membership;
+		let createdBy = results.winningPostsWithPrizes[i].createdBy as Membership;
 		if (!createdBy) {
 			continue;
 		}
-		let thanksTo = winners[i].thanksTo as Membership;
+		let thanksTo = results.winningPostsWithPrizes[i].thanksTo as Membership;
 
-		message += `${thanksTo.name} for ${winners[i].thanksFor} [from: ${createdBy.name}]`;
-		let prize = winners[i].prize as TeamPrize
+		let subject = "Thanks Winner Picked"
+		message += `${thanksTo.name} for ${results.winningPostsWithPrizes[i].thanksFor} [from: ${createdBy.name}]`;
+		let prize = results.winningPostsWithPrizes[i].prize as TeamPrize
 		if (prize?.name) {
 			message += " Prize: " + prize.name;
 		}
-		await notifyTeam(teamid, "Thanks Winner Picked", message);
+		results.messages.push(subject)
+		results.messages.push(message)
+		if (!dryRun) {
+			await notifyTeam(teamid,subject, message);
+		}
 	}
 }
 
@@ -297,72 +296,117 @@ function deleteSet(setid) {
 	return ThanksSet.findByIdAndDelete(setid);
 }
 */
-async function makePostAWinner(postid: ObjectId, setid: ObjectId) {
-	var thankspost = await ThanksPostObject.findById(postid);
+async function makePostAWinner(results: PickWinnersResults, postid: ObjectId,dryRun = true) {
+	let thankspost = await ThanksPostObject.findById(postid)
+		.populate('createdBy')
+		.populate('thanksTo');
 	if (!thankspost) {
 		return
 	}
-	var prize = await nextAvailablePrize(thankspost.team);
+
+	// Find next available prize
+	let prize = results.prizes.find( p => !p.awardedTo)
 	if (!prize) {
 		return
 	}
-	await awardPrizeTo(prize._id, thankspost.thanksTo as ObjectId);
+
+	prize.awardedTo = thankspost._id
+	prize.awardedOn = new Date()
 	thankspost.winner = true;
-	thankspost.thanksSet = setid;
 	thankspost.prize = prize._id;
-	await thankspost.save();
+	results.winningPostsWithPrizes.push(thankspost)
 }
 
 
-export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1): Promise<ThanksSet|null> {
-		let prizecount = 0;
-		let team = await getTeam(teamid);
-		if (!team) {
-			throw "Team not found: " + teamid
-			return null
-		}
-		// Step 1: Figure out if winners should be picked.
-		// Basically, we pick once a month and if a month hasn't passed
-		// we shouldn't pick any winners.
+export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1, dryRun = true): Promise<PickWinnersResults> {
+	let results = new PickWinnersResults()
+	let team = await getTeam(teamid);
+	if (!team) {
+		throw "Team not found: " + teamid
+		return results
+	}
+	// Step 1: Figure out if winners should be picked.
+	// Basically, we pick once a month and if a month hasn't passed
+	// we shouldn't pick any winners.
 
-		// Figure out which month/date rane to pick winners for
-		var daterange = await figureOutDateRange(team);
-		if (!daterange || daterange.monthsCovered < numberOfMonths) {
-			return null;
-		}
-		// Step 2: Figure out what prizes are available.
-		// The number of prizes tells us how many winners to pick.
-		let prizes = await availablePrizes(teamid);
-		prizecount = prizes.length;
-		if (!prizecount) {
-			notifyOwners(teamid, "No Prizes Selected",
-				"Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-				"To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.");
-			return null;
-			//throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
-		}
-		// Step 3: Create a new set
-		var set = await createSet(teamid, daterange.start, daterange.end);
-		// Step 4: Find thanksposts within that daterange
-		var winningThanks = await ThanksPostObject.aggregate([{
-			$match: {
-				team: teamid,
-				created: {
-					$gte: set.startDate,
-					$lt: set.endDate
-				},
-				active: true,
-				postType: 'thanks'
-			}
-		}]).sample(prizecount);
+	// Figure out which month/date rane to pick winners for
+	var daterange = await figureOutDateRange(team);
+	results.start = daterange.start
+	results.end = daterange.end
+	results.monthsCovered = daterange.monthsCovered
+	if (!daterange || daterange.monthsCovered < numberOfMonths) {
+		results.messages.push(`Debug: No winners selected because it's been less than ${numberOfMonths} since the last winners selection.`)
+		return results
+	}
 
-		// Step 5: Award prizes to those winners
-		for (var i = 0; i < winningThanks.length; i++) {
-			await makePostAWinner(winningThanks[i]._id, set._id);
+	// Step 2: Figure out what prizes are available.
+	// The number of prizes tells us how many winners to pick.
+	results.prizes = await availablePrizes(teamid);
+	let prizecount = results.prizes.length;
+	if (!prizecount) {
+		let subject = "No Prizes Selected"
+		let body = "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
+			"To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.";
+		results.messages.push(subject)
+		results.messages.push(body)
+
+		if (!dryRun) {
+			notifyOwners(teamid, subject,body);
+		}
+		return results;
+		//throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
+	}
+
+
+	// Step 4: Find thanksposts within that daterange
+	results.winningPosts = await ThanksPostObject.aggregate([{
+		$match: {
+			team: teamid,
+			created: {
+				$gte: results.start,
+				$lt: results.end
+			},
+			active: true,
+			postType: 'thanks'
+		}
+	}]).sample(prizecount);
+
+	// Step 5: Award prizes to those winners
+	for (var i = 0; i < results.winningPosts.length; i++) {
+		await makePostAWinner(results,results.winningPosts[i]._id,dryRun);
+	}
+
+
+	notifyTeamOfWinners(results,teamid,dryRun);
+
+	// Save Pick Winners Results
+	if (!dryRun) {
+		results.set = await createSet(teamid, daterange.start, daterange.end);
+
+		for(let i = 0; i < results.prizes.length;i++) {
+			let prize = results.prizes[i]
+			await TeamPrizeObject.findByIdAndUpdate(prize._id, {
+				$set: {
+					awardedTo: prize.awardedTo,
+					awardedOn: prize.awardedOn
+				}
+			});		
 		}
 
-		notifyTeamOfWinners(teamid);
-		return set
+		for(let i = 0; i < results.winningPostsWithPrizes.length;i++) {
+			let post = results.winningPostsWithPrizes[i]
+			post.thanksSet = results.set._id
+			await ThanksPostObject.findByIdAndUpdate(post._id,{
+				$set: {
+					winner: true,
+					thanksSet: post.thanksSet,
+					prize: post.prize
+				}
+			})
+		}
+	}
+
+	return results
 }
 
 
