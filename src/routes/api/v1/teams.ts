@@ -196,10 +196,11 @@ teamRoutes.post('/:teamid/prizes', async (req, res) => {
 
 teamRoutes.post('/:teamid/pick-winners', async (req, res) => {
     try {
-        let dryRun = false
-        if (req.body.dryRun) {
-            dryRun = true
+        let dryRun = true
+        if (!req.body.dryRun) {
+            dryRun = false
         }
+        console.log('dryRun',dryRun)
         let teamid = new Types.ObjectId(req.params.teamid)
         // Check the user is a team owner
 

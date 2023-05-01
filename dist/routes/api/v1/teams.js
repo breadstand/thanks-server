@@ -176,13 +176,12 @@ exports.teamRoutes.post('/:teamid/prizes', (req, res) => __awaiter(void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
-exports.teamRoutes.get('/:teamid/pick-winners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.teamRoutes.post('/:teamid/pick-winners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let dryRun = false;
         if (req.body.dryRun) {
             dryRun = true;
         }
-        console.log('dryRun:', dryRun);
         let teamid = new Types.ObjectId(req.params.teamid);
         // Check the user is a team owner
         let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);

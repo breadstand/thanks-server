@@ -240,7 +240,7 @@ function getMostRecentSet(teamid) {
 function notifyTeamOfWinners(results, teamid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
         for (var i = 0; i < results.winningPostsWithPrizes.length; i++) {
-            var message = "We just picked a th8nks winner! ";
+            var message = "We just picked a Thanks winner! ";
             let createdBy = results.winningPostsWithPrizes[i].createdBy;
             if (!createdBy) {
                 continue;
