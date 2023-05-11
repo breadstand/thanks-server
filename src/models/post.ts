@@ -1,6 +1,7 @@
 import { model, ObjectId, Schema } from "mongoose";
 import { Membership } from "./membership";
 import { TeamPrize } from "./team";
+import { Bounty } from "./bounty";
 
 
 export interface ThanksSet {
@@ -33,7 +34,7 @@ const thanksSetSchema = new Schema<ThanksSet>({
 export const ThanksSetObject = model('thanks_set',thanksSetSchema);
 
 
-export interface ThanksPost {
+export interface Post {
     _id: ObjectId,
     created: Date,
     lastUpdate: Date,
@@ -44,20 +45,21 @@ export interface ThanksPost {
     idea: String,
     thanksSet: ObjectId,
     winner: boolean,
+    bounty: ObjectId|Bounty,
+    approved: boolean,
     prize: ObjectId | TeamPrize,
     active: boolean,
-    postType: string,
-    approvedBounties: ObjectId[]
+    postType: string
 }
 
-export interface ThanksPostDetailed extends ThanksPost {
+export interface PostDetailed extends Post {
     createdBy: Membership | null,
     thanksTo: Membership | null,
 }
 
 
 
-const thanksPostSchema = new Schema<ThanksPost>({
+const postSchema = new Schema<Post>({
     created: {
         type: Date,
         default: Date.now
@@ -77,6 +79,14 @@ const thanksPostSchema = new Schema<ThanksPost>({
         type: Boolean,
         default: false
     },
+    bounty: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'bounty', 
+    },
+    approved: {
+        type: Boolean,
+        default: false
+    },
     prize: { type: Schema.Types.ObjectId, ref: 'prize' },
     active: {
         type: Boolean,
@@ -87,27 +97,23 @@ const thanksPostSchema = new Schema<ThanksPost>({
         enum : ['thanks','idea'],
         default: 'thanks'
     },
-    approvedBounties: [{
-        type: Schema.Types.ObjectId, 
-        ref: 'team_bounty'
-    }]
 });
 
-export const ThanksPostObject = model('thanks_post',thanksPostSchema);
-thanksPostSchema.index({createdBy: 1});
-thanksPostSchema.index({thanksTo: 1});
-thanksPostSchema.index({team: 1});
-thanksPostSchema.index({created: 1});
-thanksPostSchema.index({thanksFor: 1,winner: 1});
-thanksPostSchema.index({team: 1,set: 1});
+export const PostObject = model('post',postSchema);
+postSchema.index({createdBy: 1});
+postSchema.index({thanksTo: 1});
+postSchema.index({team: 1});
+postSchema.index({created: 1});
+postSchema.index({thanksFor: 1,winner: 1});
+postSchema.index({team: 1,set: 1});
 
 export class PickWinnersResults {
     start: Date = new Date()
     end: Date = new Date()
     monthsCovered = 0
     prizes: TeamPrize[] = []
-    winningPosts: ThanksPost[] = []
-    winningPostsWithPrizes: ThanksPost[] = []
+    winningPosts: Post[] = []
+    winningPostsWithPrizes: Post[] = []
     set: ThanksSet|undefined = undefined
     messages: string[] = []
 }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PickWinnersResults = exports.ThanksPostObject = exports.ThanksSetObject = void 0;
+exports.PickWinnersResults = exports.PostObject = exports.ThanksSetObject = void 0;
 const mongoose_1 = require("mongoose");
 const thanksSetSchema = new mongoose_1.Schema({
     created: {
@@ -22,7 +22,7 @@ const thanksSetSchema = new mongoose_1.Schema({
     }
 });
 exports.ThanksSetObject = (0, mongoose_1.model)('thanks_set', thanksSetSchema);
-const thanksPostSchema = new mongoose_1.Schema({
+const postSchema = new mongoose_1.Schema({
     created: {
         type: Date,
         default: Date.now
@@ -42,6 +42,15 @@ const thanksPostSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    bounty: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'team_bounty',
+        required: true
+    },
+    approved: {
+        type: Boolean,
+        default: false
+    },
     prize: { type: mongoose_1.Schema.Types.ObjectId, ref: 'prize' },
     active: {
         type: Boolean,
@@ -52,18 +61,14 @@ const thanksPostSchema = new mongoose_1.Schema({
         enum: ['thanks', 'idea'],
         default: 'thanks'
     },
-    approvedBounties: [{
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'team_bounty'
-        }]
 });
-exports.ThanksPostObject = (0, mongoose_1.model)('thanks_post', thanksPostSchema);
-thanksPostSchema.index({ createdBy: 1 });
-thanksPostSchema.index({ thanksTo: 1 });
-thanksPostSchema.index({ team: 1 });
-thanksPostSchema.index({ created: 1 });
-thanksPostSchema.index({ thanksFor: 1, winner: 1 });
-thanksPostSchema.index({ team: 1, set: 1 });
+exports.PostObject = (0, mongoose_1.model)('thanks_post', postSchema);
+postSchema.index({ createdBy: 1 });
+postSchema.index({ thanksTo: 1 });
+postSchema.index({ team: 1 });
+postSchema.index({ created: 1 });
+postSchema.index({ thanksFor: 1, winner: 1 });
+postSchema.index({ team: 1, set: 1 });
 class PickWinnersResults {
     constructor() {
         this.start = new Date();

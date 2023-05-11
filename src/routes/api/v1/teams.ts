@@ -1,10 +1,12 @@
 import { Router } from "express"
-import { TeamBounty, TeamPrize } from "../../../models/team"
+import { TeamPrize } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createBounty, createPrize, createTeam, deactivePrize, deleteTeam, getBounties, getBounty, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateBounty, updateTeam } from "../../../services/teams"
-import { figureOutDateRange, pickTeamWinners } from "../../../services/thanks"
+import { availablePrizes, createPrize, createTeam, deactivePrize, deleteTeam, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateTeam } from "../../../services/teams"
+import { figureOutDateRange, pickTeamWinners } from "../../../services/posts"
 import { getUser } from "../../../services/users"
-import { ThanksSetObject } from "../../../models/thankspost"
+import { ThanksSetObject } from "../../../models/post"
+import { Bounty, BountyObject, BountyUpdate } from "../../../models/bounty"
+import { truncateSync } from "fs"
 const Types = require('mongoose').Types
 
 export var teamRoutes = Router()
@@ -257,7 +259,11 @@ teamRoutes.get('/:id/bounties', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not a member of this team.")
         }
 
-        let bounties = await getBounties(teamid)
+        let bounties = await BountyObject.find({team: teamid, active: true})
+            .populate('createdBy')
+            .populate('ideas')
+            .populate('ideas.createdBy')
+            .sort({name: 1})
         res.json({
             success: true,
             error: '',
@@ -273,7 +279,7 @@ teamRoutes.get('/:id/bounties', async (req, res) => {
 teamRoutes.post('/:teamid/bounties', async (req, res) => {
     try {
         let teamid = new Types.ObjectId(req.params.teamid)
-        let bounty: TeamBounty = req.body
+        let bounty = new BountyObject(req.body)
         let missingFields: string[] = []
         if (!bounty.team) { missingFields.push('team') }
         if (!bounty.createdBy) { missingFields.push('createdBy') }
@@ -296,11 +302,13 @@ teamRoutes.post('/:teamid/bounties', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not a team owner")
         }
 
-        let savedBounty = await createBounty(bounty)
+
+
+        await bounty.save()
         res.json({
             success: true,
             error: '',
-            data: savedBounty
+            data: bounty
         })
 
     } catch (err) {
@@ -315,18 +323,24 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
     try {
         let teamid = new Types.ObjectId(req.params.teamid)
         let bountyid = new Types.ObjectId(req.params.bountyid)
-        let bounty: TeamBounty = req.body
+        let update: BountyUpdate = req.body
 
         let usersMembership = await getMemberByUserId(teamid, req.userId)
         if (!usersMembership?.owner) {
             return res.status(401).send("Unauthorized: You are not a team owner")
         }
 
+        let bounty = await BountyObject.findById(bountyid)
+        if (!bounty) {
+            return res.status(404).send("Cannot find that bounty")
+        }
+
         if (String(bounty.team) != String(teamid)) {
             return res.status(401).send("Unauthorized: Bounty posted to the wrong URL")
         }
 
-        let updatedBounty = await updateBounty(bountyid, bounty)
+        let updatedBounty = await BountyObject.findByIdAndUpdate(bountyid, {$set: update},{new: true})
+
         res.json({
             success: true,
             error: '',
@@ -350,7 +364,7 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
             return res.status(401).send("Unauthorized: You are not a team owner")
         }
 
-        let bounty = await getBounty(bountyid)
+        let bounty = await BountyObject.findById(bountyid)
         if (!bounty) {
             return res.status(404).send("No such bounty")
         }
@@ -374,40 +388,6 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
     }
 })
 
-
-
-teamRoutes.post('/:teamid/bounties/:bountyid/ideas', async (req, res) => {
-    try {
-        let teamid = new Types.ObjectId(req.params.teamid)
-        let bountyid = new Types.ObjectId(req.params.bountyid)
-
-        let usersMembership = await getMemberByUserId(teamid, req.userId)
-        if (!usersMembership?.owner) {
-            return res.status(401).send("Unauthorized: You are not a team owner")
-        }
-
-        let bounty = await getBounty(bountyid)
-        if (!bounty) {
-            return res.status(404).send("No such bounty")
-        }
-
-        if (String(bounty.team) != String(teamid)) {
-            return res.status(401).send("Unauthorized: Bounty does not belong to team")
-        }
-
-        bounty.ideas.push(req.body.postid)
-        await bounty.save()
-        res.json({
-            success: true,
-            error: '',
-            data: bounty
-        })
-
-    } catch (err) {
-        console.log(err)
-        res.status(500).send('Internal server error')
-    }
-})
 
 
 

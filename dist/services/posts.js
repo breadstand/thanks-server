@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivatePost = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.createPost = void 0;
 const team_1 = require("../models/team");
-const thankspost_1 = require("../models/thankspost");
+const post_1 = require("../models/post");
 const teams_1 = require("./teams");
 function sanitizeFor(postfor, size = 280) {
     if (!postfor) {
@@ -20,7 +20,7 @@ function sanitizeFor(postfor, size = 280) {
     return postfor.slice(0, 280).trim();
 }
 function createPost(newPost) {
-    var thankspost = new thankspost_1.PostObject(newPost);
+    var thankspost = new post_1.PostObject(newPost);
     return thankspost.save()
         .then((thankspost) => {
         if (thankspost.postType == 'thanks') {
@@ -41,7 +41,7 @@ exports.createPost = createPost;
 ;
 function sendToTeam(thanksid) {
     console.log('sendToTeam()');
-    return thankspost_1.PostObject.findById(thanksid)
+    return post_1.PostObject.findById(thanksid)
         .populate({
         path: "createdBy"
     })
@@ -97,7 +97,7 @@ function getPosts(teamid, filter) {
             count = filter.limit;
         }
     }
-    return thankspost_1.PostObject.find(query)
+    return post_1.PostObject.find(query)
         .sort({
         _id: -1
     })
@@ -124,7 +124,7 @@ function figureOutDateRange(team, now = new Date()) {
             end: now,
             monthsCovered: 1
         };
-        let mostRecentSet = yield thankspost_1.ThanksSetObject.find({
+        let mostRecentSet = yield post_1.ThanksSetObject.find({
             team: team._id
         }).limit(1).sort({
             _id: -1
@@ -166,7 +166,7 @@ function figureOutDateRange(team, now = new Date()) {
 exports.figureOutDateRange = figureOutDateRange;
 function getMostRecentSet(teamid) {
     return __awaiter(this, void 0, void 0, function* () {
-        var recentsets = yield thankspost_1.ThanksSetObject.find({
+        var recentsets = yield post_1.ThanksSetObject.find({
             team: teamid
         }).sort({
             _id: -1
@@ -199,7 +199,7 @@ function notifyTeamOfWinners(results, teamid, dryRun = true) {
 }
 function createSet(teamid, start, end) {
     return __awaiter(this, void 0, void 0, function* () {
-        var set = new thankspost_1.ThanksSetObject({
+        var set = new post_1.ThanksSetObject({
             team: teamid,
             startDate: start,
             endDate: end
@@ -225,7 +225,7 @@ function deleteSet(setid) {
 */
 function makePostAWinner(results, postid, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        let thankspost = yield thankspost_1.PostObject.findById(postid)
+        let thankspost = yield post_1.PostObject.findById(postid)
             .populate('createdBy')
             .populate('thanksTo');
         if (!thankspost) {
@@ -245,7 +245,7 @@ function makePostAWinner(results, postid, dryRun = true) {
 }
 function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
     return __awaiter(this, void 0, void 0, function* () {
-        let results = new thankspost_1.PickWinnersResults();
+        let results = new post_1.PickWinnersResults();
         let team = yield (0, teams_1.getTeam)(teamid);
         if (!team) {
             throw "Team not found: " + teamid;
@@ -280,7 +280,7 @@ function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
             //throw "No prizes for team '" + team.name + "'. Cannot pick a winner.";
         }
         // Step 4: Find thanksposts within that daterange
-        results.winningPosts = yield thankspost_1.PostObject.aggregate([{
+        results.winningPosts = yield post_1.PostObject.aggregate([{
                 $match: {
                     team: teamid,
                     created: {
@@ -311,7 +311,7 @@ function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
             for (let i = 0; i < results.winningPostsWithPrizes.length; i++) {
                 let post = results.winningPostsWithPrizes[i];
                 post.thanksSet = results.set._id;
-                yield thankspost_1.PostObject.findByIdAndUpdate(post._id, {
+                yield post_1.PostObject.findByIdAndUpdate(post._id, {
                     $set: {
                         winner: true,
                         thanksSet: post.thanksSet,
@@ -326,7 +326,7 @@ function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
 exports.pickTeamWinners = pickTeamWinners;
 function getWinners(setid) {
     return __awaiter(this, void 0, void 0, function* () {
-        return thankspost_1.PostObject.find({
+        return post_1.PostObject.find({
             thanksSet: setid
         })
             .populate({
@@ -597,7 +597,7 @@ function updatePost(postid, update) {
 */
 function deactivatePost(postid) {
     return __awaiter(this, void 0, void 0, function* () {
-        var post = yield thankspost_1.PostObject.findByIdAndUpdate(postid, {
+        var post = yield post_1.PostObject.findByIdAndUpdate(postid, {
             $set: {
                 active: false
             }

@@ -26,9 +26,9 @@ import { membershipRoutes } from './routes/api/v1/memberships';
 app.use('/api/v1/memberships',verifyToken)
 app.use('/api/v1/memberships',membershipRoutes)
 
-import { thanksPostsRoutes } from './routes/api/v1/thanksposts';
-app.use('/api/v1/thanksposts',verifyToken)
-app.use('/api/v1/thanksposts',thanksPostsRoutes)
+import { postsRoutes } from './routes/api/v1/posts';
+app.use('/api/v1/posts',verifyToken)
+app.use('/api/v1/posts',postsRoutes)
 
 
 import { teamRoutes } from './routes/api/v1/teams';

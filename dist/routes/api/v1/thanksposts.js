@@ -9,14 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.thanksPostsRoutes = void 0;
+exports.postsRoutes = void 0;
 const express_1 = require("express");
 const thankspost_1 = require("../../../models/thankspost");
 const teams_1 = require("../../../services/teams");
 const thanks_1 = require("../../../services/thanks");
+const bounties_1 = require("../../../services/bounties");
 const Types = require('mongoose').Types;
-exports.thanksPostsRoutes = (0, express_1.Router)();
-exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes = (0, express_1.Router)();
+exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // We only want authorized team members to see the posts
         let teamid = new Types.ObjectId(req.query.team);
@@ -35,7 +36,7 @@ exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 
                 limit = newLimit;
             }
         }
-        let thanksPosts = yield thankspost_1.ThanksPostObject.find(query)
+        let posts = yield thankspost_1.PostObject.find(query)
             .sort({
             _id: -1
         })
@@ -46,7 +47,7 @@ exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 
         res.json({
             success: true,
             error: '',
-            data: thanksPosts
+            data: posts
         });
     }
     catch (error) {
@@ -54,7 +55,7 @@ exports.thanksPostsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
-exports.thanksPostsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let newPost = req.body;
         let missingFields = [];
@@ -87,10 +88,10 @@ exports.thanksPostsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void
         if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
             return res.status(401).send("You're not the owner of this post or an owner.");
         }
-        let thanksPost = yield (0, thanks_1.createThanksPost)(newPost);
+        let post = yield (0, thanks_1.createPost)(newPost);
         res.json({
             success: true,
-            data: thanksPost
+            data: post
         });
     }
     catch (error) {
@@ -98,11 +99,11 @@ exports.thanksPostsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void
         res.status(500).send('Internal server error');
     }
 }));
-exports.thanksPostsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let postId = new Types.ObjectId(req.params.id);
         // Load post
-        let post = yield thankspost_1.ThanksPostObject.findById(postId);
+        let post = yield thankspost_1.PostObject.findById(postId);
         if (!post.team) {
             return res.json({
                 success: false,
@@ -129,12 +130,11 @@ exports.thanksPostsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0,
         res.status(500).send('Internal server error');
     }
 }));
-exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes.put('/:id/approve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let postId = new Types.ObjectId(req.params.id);
-        let bountyId = new Types.ObjectId(req.params.bountyid);
+        let postid = new Types.ObjectId(req.params.id);
         // Load post
-        let post = yield thankspost_1.ThanksPostObject.findById(postId);
+        let post = yield thankspost_1.PostObject.findById(postid);
         if (!post.team) {
             return res.json({
                 success: false,
@@ -147,7 +147,7 @@ exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', (req, res) => _
         if (!(member === null || member === void 0 ? void 0 : member.owner)) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
-        let updatedPost = yield (0, thanks_1.approveBounty)(postId, bountyId);
+        let updatedPost = yield (0, bounties_1.approveBounty)(postid);
         res.json({
             success: true,
             error: '',
@@ -159,12 +159,11 @@ exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', (req, res) => _
         res.status(500).send('Internal server error');
     }
 }));
-exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes.put('/:id/disapprove', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let postId = new Types.ObjectId(req.params.id);
-        let bountyId = new Types.ObjectId(req.params.bountyid);
         // Load post
-        let post = yield thankspost_1.ThanksPostObject.findById(postId);
+        let post = yield thankspost_1.PostObject.findById(postId);
         if (!post.team) {
             return res.json({
                 success: false,
@@ -177,7 +176,7 @@ exports.thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', (req, res) => __
         if (!(member === null || member === void 0 ? void 0 : member.owner)) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
-        let updatedPost = yield (0, thanks_1.removeBounty)(postId, bountyId);
+        let updatedPost = yield (0, bounties_1.removeBounty)(postId);
         res.json({
             success: true,
             error: '',

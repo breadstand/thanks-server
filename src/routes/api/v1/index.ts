@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { Router } from 'express'
 import { MembershipObject } from '../../../models/membership';
-import { ThanksPostObject } from '../../../models/thankspost';
+import { PostObject } from '../../../models/post';
 import { User } from '../../../models/user';
 import { UserObject } from '../../../models/user';
 import { assignUserToMembersByContact } from '../../../services/teams';
@@ -104,8 +104,8 @@ apiRootRoutes.post('/verify-code', async (req, res) => {
                     continue;
                 }
                 await MembershipObject.updateMany({ user: u._id }, { user: user._id })
-                await ThanksPostObject.updateMany({ createdBy: u._id }, { createdBy: user._id })
-                await ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id })
+                await PostObject.updateMany({ createdBy: u._id }, { createdBy: user._id })
+                await PostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id })
                 await UserObject.deleteOne({_id: u._id})
             }
 

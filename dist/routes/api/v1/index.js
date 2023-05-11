@@ -13,7 +13,7 @@ exports.apiRootRoutes = void 0;
 const crypto_1 = require("crypto");
 const express_1 = require("express");
 const membership_1 = require("../../../models/membership");
-const thankspost_1 = require("../../../models/thankspost");
+const post_1 = require("../../../models/post");
 const user_1 = require("../../../models/user");
 const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
@@ -102,8 +102,8 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
                     continue;
                 }
                 yield membership_1.MembershipObject.updateMany({ user: u._id }, { user: user._id });
-                yield thankspost_1.ThanksPostObject.updateMany({ createdBy: u._id }, { createdBy: user._id });
-                yield thankspost_1.ThanksPostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id });
+                yield post_1.PostObject.updateMany({ createdBy: u._id }, { createdBy: user._id });
+                yield post_1.PostObject.updateMany({ thanksTo: u._id }, { thanksTo: user._id });
                 yield user_1.UserObject.deleteOne({ _id: u._id });
             }
             // Update last login for each member

@@ -1,13 +1,15 @@
 import { Router } from "express"
-import { ThanksPostObject, ThanksPost } from "../../../models/thankspost"
+import { PostObject, Post, PostDetailed } from "../../../models/post"
 import { getMemberByUserId } from "../../../services/teams"
-import { approveBounty, createThanksPost, deactivatePost, getThanksPosts, removeBounty } from "../../../services/thanks"
+import { createPost, deactivatePost, getPosts } from "../../../services/posts"
+import { approveBounty, removeBounty } from "../../../services/bounties"
+
 const Types = require('mongoose').Types
 
-export var thanksPostsRoutes = Router()
+export var postsRoutes = Router()
 
 
-thanksPostsRoutes.get('/', async (req, res) => {
+postsRoutes.get('/', async (req, res) => {
 
     try {
         // We only want authorized team members to see the posts
@@ -31,19 +33,20 @@ thanksPostsRoutes.get('/', async (req, res) => {
             }
         }
 
-        let thanksPosts = await ThanksPostObject.find(query)
+        let posts = await PostObject.find(query)
             .sort({
                 _id: -1
             })
             .limit(limit)
             .populate('thanksTo')
             .populate('prize')
+            .populate('bounty')
             .populate('createdBy');
 
-        res.json({
+            res.json({
             success: true,
             error: '',
-            data: thanksPosts
+            data: posts
         })
     }
     catch (error) {
@@ -52,9 +55,9 @@ thanksPostsRoutes.get('/', async (req, res) => {
     }
 })
 
-thanksPostsRoutes.post('/', async (req, res) => {
+postsRoutes.post('/', async (req, res) => {
     try {
-        let newPost = req.body as ThanksPost
+        let newPost = req.body as Post
 
         let missingFields = []
         if (!newPost.team) {
@@ -88,10 +91,10 @@ thanksPostsRoutes.post('/', async (req, res) => {
         if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
             return res.status(401).send("You're not the owner of this post or an owner.")
         }
-        let thanksPost = await createThanksPost(newPost)
+        let post = await createPost(newPost)
         res.json({
             success: true,
-            data: thanksPost
+            data: post
         })
     }
     catch (error) {
@@ -102,12 +105,12 @@ thanksPostsRoutes.post('/', async (req, res) => {
 })
 
 
-thanksPostsRoutes.put('/:id/deactivate', async (req, res) => {
+postsRoutes.put('/:id/deactivate', async (req, res) => {
     try {
         let postId = new Types.ObjectId(req.params.id)
 
         // Load post
-        let post = await ThanksPostObject.findById(postId) as ThanksPost
+        let post = await PostObject.findById(postId) as Post
 
         if (!post.team) {
             return res.json({
@@ -144,13 +147,12 @@ thanksPostsRoutes.put('/:id/deactivate', async (req, res) => {
 
 
 
-thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', async (req, res) => {
+postsRoutes.put('/:id/set-approved', async (req, res) => {
     try {
-        let postId = new Types.ObjectId(req.params.id)
-        let bountyId = new Types.ObjectId(req.params.bountyid)
+        let postid = new Types.ObjectId(req.params.id)
 
         // Load post
-        let post = await ThanksPostObject.findById(postId) as ThanksPost
+        let post = await PostObject.findById(postid) as Post
 
         if (!post.team) {
             return res.json({
@@ -166,12 +168,22 @@ thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }
 
-        let updatedPost = await approveBounty(postId,bountyId)
-        res.json({
-            success: true,
-            error: '',
-            data: updatedPost
-        })
+        if (req.body.approve) {
+            let updatedPost = await approveBounty(postid)
+            res.json({
+                success: true,
+                error: '',
+                data: updatedPost
+            })
+        } else {
+            let updatedPost = await removeBounty(postid)
+            res.json({
+                success: true,
+                error: '',
+                data: updatedPost
+            })
+        }
+
     }
     catch (error) {
         console.log(error)
@@ -180,13 +192,12 @@ thanksPostsRoutes.put('/:id/bounties/:bountyid/approve', async (req, res) => {
 })
 
 
-thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', async (req, res) => {
+postsRoutes.put('/:id/disapprove', async (req, res) => {
     try {
         let postId = new Types.ObjectId(req.params.id)
-        let bountyId = new Types.ObjectId(req.params.bountyid)
 
         // Load post
-        let post = await ThanksPostObject.findById(postId) as ThanksPost
+        let post = await PostObject.findById(postId) as Post
 
         if (!post.team) {
             return res.json({
@@ -202,7 +213,7 @@ thanksPostsRoutes.put('/:id/bounties/:bountyid/remove', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }
 
-        let updatedPost = await removeBounty(postId,bountyId)
+        let updatedPost = await removeBounty(postId)
         res.json({
             success: true,
             error: '',

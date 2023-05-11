@@ -1,8 +1,8 @@
 import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
-import { Team, TeamBounty, TeamBountyObject, TeamPrize, TeamPrizeObject } from "../models/team";
-import { ThanksPost, ThanksPostDetailed, ThanksSetObject, ThanksSet, ThanksPostObject, PickWinnersResults } from "../models/thankspost";
-import { availablePrizes, awardPrizeTo, getBounty, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
+import { Team, TeamPrize, TeamPrizeObject } from "../models/team";
+import { Post, PostDetailed, ThanksSetObject, ThanksSet, PostObject, PickWinnersResults } from "../models/post";
+import { availablePrizes, awardPrizeTo, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
 
 
 export interface DateRange {
@@ -18,10 +18,10 @@ function sanitizeFor(postfor: string, size = 280) {
 	return postfor.slice(0, 280).trim();
 }
 
-export function createThanksPost(newPost: ThanksPost) {
-	var thankspost = new ThanksPostObject(newPost);
+export function createPost(newPost: Post) {
+	var thankspost = new PostObject(newPost);
 	return thankspost.save()
-		.then((thankspost: ThanksPost) => {
+		.then((thankspost: Post) => {
 			if (thankspost.postType == 'thanks') {
 				sendToTeam(thankspost._id);
 				return Promise.all([
@@ -38,7 +38,7 @@ export function createThanksPost(newPost: ThanksPost) {
 
 function sendToTeam(thanksid: ObjectId) {
 	console.log('sendToTeam()')
-	return ThanksPostObject.findById(thanksid)
+	return PostObject.findById(thanksid)
 		.populate({
 			path: "createdBy"
 		})
@@ -62,7 +62,7 @@ function sendToTeam(thanksid: ObjectId) {
 
 
 
-export function getThanksPosts(teamid: ObjectId, filter: any) {
+export function getPosts(teamid: ObjectId, filter: any) {
 
 	var count = 20;
 
@@ -100,7 +100,7 @@ export function getThanksPosts(teamid: ObjectId, filter: any) {
 			count = filter.limit
 		}
 	}
-	return ThanksPostObject.find(query)
+	return PostObject.find(query)
 		.sort({
 			_id: -1
 		})
@@ -110,69 +110,6 @@ export function getThanksPosts(teamid: ObjectId, filter: any) {
 		.populate('createdBy');
 }
 
-
-export async function approveBounty(postid: ObjectId, bountyid: ObjectId) {
-	let post: ThanksPost | null = await ThanksPostObject.findByIdAndUpdate({
-		_id: postid,
-		postType: 'idea'
-	}, {
-		$push: {
-			approvedBounties: bountyid
-		}
-	}, {
-		new: true
-	});
-	if (!post) {
-		return null
-	}
-
-	let bounty: TeamBounty | null = await TeamBountyObject.findByIdAndUpdate({
-		_id: bountyid
-	}, {
-		$push: {
-			approvedIdeas: postid
-		}
-	}, {
-		new: true
-	});
-
-	if (!bounty) {
-		return post
-	}
-	let subject = 'Bounty Approved: ' + post.idea;
-	let message = 'Your idea was approved for a bounty.\n' +
-		'Idea: ' + post.idea +
-		'Bounty: ' + bounty.name +
-		'Amount: ' + bounty.amount;
-	if (!post.createdBy) {
-		return post
-	}
-	notifyMember(post.createdBy as ObjectId, subject, message);
-	return post
-};
-
-export async function removeBounty(postid: ObjectId, bountyid: ObjectId) {
-	let post = await ThanksPostObject.findById(postid);
-	if (post) {
-		let el = post.approvedBounties.findIndex(el => el.toString() == bountyid.toString());
-		if (el >= 0) {
-			post.approvedBounties.splice(el, 1);
-		}
-		await post.save();
-	}
-
-	let bounty = await TeamBountyObject.findById(bountyid);
-	if (bounty) {
-		let el = bounty.approvedIdeas.findIndex(el => el.toString() == postid.toString());
-		if (el >= 0) {
-			bounty.approvedIdeas.splice(el, 1);
-		}
-		await bounty.save();
-	}
-
-
-	return post;
-}
 
 
 
@@ -297,7 +234,7 @@ function deleteSet(setid) {
 }
 */
 async function makePostAWinner(results: PickWinnersResults, postid: ObjectId,dryRun = true) {
-	let thankspost = await ThanksPostObject.findById(postid)
+	let thankspost = await PostObject.findById(postid)
 		.populate('createdBy')
 		.populate('thanksTo');
 	if (!thankspost) {
@@ -359,7 +296,7 @@ export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1, dryR
 
 
 	// Step 4: Find thanksposts within that daterange
-	results.winningPosts = await ThanksPostObject.aggregate([{
+	results.winningPosts = await PostObject.aggregate([{
 		$match: {
 			team: teamid,
 			created: {
@@ -396,7 +333,7 @@ export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1, dryR
 		for(let i = 0; i < results.winningPostsWithPrizes.length;i++) {
 			let post = results.winningPostsWithPrizes[i]
 			post.thanksSet = results.set._id
-			await ThanksPostObject.findByIdAndUpdate(post._id,{
+			await PostObject.findByIdAndUpdate(post._id,{
 				$set: {
 					winner: true,
 					thanksSet: post.thanksSet,
@@ -410,9 +347,9 @@ export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1, dryR
 }
 
 
-async function getWinners(setid: ObjectId): Promise<ThanksPost[]> {
+async function getWinners(setid: ObjectId): Promise<Post[]> {
 
-	return ThanksPostObject.find({
+	return PostObject.find({
 		thanksSet: setid
 	})
 		.populate({
@@ -446,7 +383,7 @@ async function pickWinners() {
 async function getTrendingByTeam(teamid) {
 	var results = [];
 
-	var posts = await ThanksPost.find({
+	var posts = await Post.find({
 			team: teamid,
 			active: true
 		})
@@ -537,7 +474,7 @@ async function getUnappreciativeMembers(teamid) {
 	var since = new Date();
 	since.setDate(since.getDate() - team.nudge_days);
 
-	var appreciativemembers = await ThanksPost.aggregate([{
+	var appreciativemembers = await Post.aggregate([{
 			$match: {
 				team: teamid,
 				created: {
@@ -622,7 +559,7 @@ async function nudgeAllTeams() {
 
 function getWins(tomemberid, limit = 20) {
 
-	return ThanksPost.find({
+	return Post.find({
 			to: tomemberid,
 			winner: true,
 			active: true,
@@ -649,7 +586,7 @@ function getWins(tomemberid, limit = 20) {
 
 
 export async function getPost(postId:ObjectId) {
-	return ThanksPost.findOne({
+	return Post.findOne({
 			_id: thanksid,
 			active: true
 		})
@@ -669,7 +606,7 @@ function updatePost(postid, update) {
 		throw "Use deactivatePost() to update active status";
 	}
 
-	return ThanksPost.findOneAndUpdate({
+	return Post.findOneAndUpdate({
 		_id: postid,
 		active: true
 	}, {
@@ -681,14 +618,14 @@ function updatePost(postid, update) {
 
 */
 
-export async function deactivatePost(postid: ObjectId): Promise<ThanksPost | null> {
-	var post = await ThanksPostObject.findByIdAndUpdate(postid, {
+export async function deactivatePost(postid: ObjectId): Promise<Post | null> {
+	var post = await PostObject.findByIdAndUpdate(postid, {
 		$set: {
 			active: false
 		}
 	}, {
 		new: true
-	}) as ThanksPost
+	}) as Post
 	if (!post) {
 		return null
 	}
@@ -706,19 +643,20 @@ export async function deactivatePost(postid: ObjectId): Promise<ThanksPost | nul
 /*
 function deleteTeamData(teamid) {
 	return Promise.all([
-		ThanksPost.deleteMany({team: teamid}),
+		Post.deleteMany({team: teamid}),
 		ThanksSet.deleteMany({team: teamid})
 	]);
 }
 
 async function deleteOrphans() {
-	await ThanksPost.find({})
+	await Post.find({})
 		.populate('team')
 		.cursor()
 		.eachAsync(async function(post) {
 			if (!post.team) {
-				await ThanksPost.findByIdAndDelete(post._id);
+				await Post.findByIdAndDelete(post._id);
 			}
 		});
 }
 */
+

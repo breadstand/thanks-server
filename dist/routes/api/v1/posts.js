@@ -9,140 +9,182 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.postRoutes = void 0;
+exports.postsRoutes = void 0;
 const express_1 = require("express");
 const post_1 = require("../../../models/post");
-const ObjectId = require('mongoose').ObjectId;
-exports.postRoutes = (0, express_1.Router)();
-exports.postRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const teams_1 = require("../../../services/teams");
+const posts_1 = require("../../../services/posts");
+const bounties_1 = require("../../../services/bounties");
+const Types = require('mongoose').Types;
+exports.postsRoutes = (0, express_1.Router)();
+exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // has_more
-        let has_more = false;
-        let has_more_after = false;
-        // ending_before
-        // starting_after
+        // We only want authorized team members to see the posts
+        let teamid = new Types.ObjectId(req.query.team);
+        let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!member) {
+            throw "User is not a member of team";
+        }
+        let limit = 100;
         let query = {
-            user: req.userId,
-            draft: false,
-            deleted: { $ne: true }
+            team: teamid,
+            active: true
         };
-        let sort = {
-            lastUpdate: 'desc',
-            created: 'desc'
-        };
-        let limit = 12;
-        if (req.query.limit) {
-            limit = Math.min(Number(req.query.limit), 100);
-        }
-        if (req.query.category !== undefined) {
-            query.category = req.query.category;
-        }
-        if (req.query.draft !== undefined) {
-            query.draft = (req.query.draft == 'true');
-        }
-        if (req.query.ending_before) {
-            has_more_after = true;
-            query.lastUpdate = { $lt: req.query.ending_before };
-            // Increase limit so we can detect has_more and has_more_before
-        }
-        if (req.query.starting_after) {
-            has_more = true;
-            query.lastUpdate = { $gt: req.query.starting_after };
-            sort.lastUpdate = 'asc';
-            // Increase limit so we can detect has_more and has_more before
-        }
-        if (req.query.count_posts) {
-            delete query.lastUpdate;
-            // For count requests, we'll skip the find
-            let count = yield post_1.PostObject.countDocuments(query);
-            res.json({
-                object: "number",
-                success: true,
-                data: count
-            });
-        }
-        else {
-            // put sort in here
-            let posts = yield post_1.PostObject.find(query)
-                .sort(sort)
-                .limit(limit + 1);
-            // When the query is "starting_after", the
-            // sort is reversed, so we have to reverse it back.
-            if (req.query.starting_after) {
-                if (posts.length >= limit + 1) {
-                    has_more_after = true;
-                    posts.pop();
-                }
-                posts.sort((a, b) => {
-                    if (a.lastUpdate > b.lastUpdate) {
-                        return -1;
-                    }
-                    return 1;
-                });
+        if (req.body.limit) {
+            let newLimit = parseInt(req.body.limit);
+            if (newLimit <= 100) {
+                limit = newLimit;
             }
-            else {
-                if (posts.length > limit) {
-                    has_more = true;
-                    posts.pop();
-                }
-            }
-            res.json({
-                object: "list",
-                success: true,
-                data: posts,
-                has_more: has_more,
-                has_more_after: has_more_after
-            });
         }
+        let posts = yield post_1.PostObject.find(query)
+            .sort({
+            _id: -1
+        })
+            .limit(limit)
+            .populate('thanksTo')
+            .populate('prize')
+            .populate('createdBy');
+        res.json({
+            success: true,
+            error: '',
+            data: posts
+        });
     }
     catch (error) {
         console.log(error);
         res.status(500).send('Internal server error');
     }
 }));
-exports.postRoutes.post('/', (req, res) => {
-    let postData = req.body;
-    delete req.body._id;
-    let post = new post_1.PostObject(postData);
-    post.user = req.userId;
-    post.save()
-        .then(savedPost => {
-        res.status(200).send({
-            success: true,
-            data: savedPost
-        });
-    }).catch(err => {
-        console.log(err);
-        res.status(500).send('Internal server error');
-    });
-});
-exports.postRoutes.get('/:id', (req, res) => {
-    post_1.PostObject.findById(req.params.id)
-        .then(post => {
+exports.postsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let newPost = req.body;
+        let missingFields = [];
+        if (!newPost.team) {
+            missingFields.push('team');
+        }
+        if (!newPost.postType || (newPost.postType != 'thanks' && newPost.postType != 'idea')) {
+            missingFields.push('postType');
+        }
+        if (!newPost.thanksTo && !newPost.thanksFor && newPost.postType == 'thanks') {
+            missingFields.push('thanksTo');
+            missingFields.push('thanksFor');
+        }
+        if (!newPost.idea && newPost.postType == 'idea') {
+            missingFields.push('idea');
+        }
+        if (missingFields.length > 0) {
+            return res.json({
+                success: false,
+                error: "The post is incomplete. It's missing the following fields: " + missingFields.join(', '),
+                data: newPost
+            });
+        }
+        // Only team owners or post owners can deactivePosts
+        let member = yield (0, teams_1.getMemberByUserId)(newPost.team, req.userId);
+        if (!member) {
+            return res.status(401).send("You're not a member of the post's team.");
+        }
+        newPost.createdBy = member._id;
+        if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
+            return res.status(401).send("You're not the owner of this post or an owner.");
+        }
+        let post = yield (0, posts_1.createPost)(newPost);
         res.json({
             success: true,
             data: post
         });
-    }).catch(err => {
-        console.log(err);
+    }
+    catch (error) {
+        console.log(error);
         res.status(500).send('Internal server error');
-    });
-});
-exports.postRoutes.put('/:id', (req, res) => {
-    let options = {
-        returnDocument: 'after',
-    };
-    let postUpdate = req.body;
-    delete postUpdate._id;
-    delete postUpdate.user;
-    post_1.PostObject.findOneAndUpdate({ _id: req.params.id, user: req.userId }, postUpdate, options)
-        .then(updatedPost => {
-        res.status(200).json({
+    }
+}));
+exports.postsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postId = new Types.ObjectId(req.params.id);
+        // Load post
+        let post = yield post_1.PostObject.findById(postId);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners or post owners can deactivePosts
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!member) {
+            return res.status(401).send("You're not a member of the team that posted this.");
+        }
+        if (!member.owner && String(member._id) != String(post.createdBy)) {
+            return res.status(401).send("You are not the team owner or creator.");
+        }
+        let updatedPost = yield (0, posts_1.deactivatePost)(postId);
+        res.json({
             success: true,
             data: updatedPost
         });
-    })
-        .catch(err => {
+    }
+    catch (error) {
+        console.log(error);
         res.status(500).send('Internal server error');
-    });
-});
+    }
+}));
+exports.postsRoutes.put('/:id/approve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postid = new Types.ObjectId(req.params.id);
+        // Load post
+        let post = yield post_1.PostObject.findById(postid);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners can approve/disapprove
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let updatedPost = yield (0, bounties_1.approveBounty)(postid);
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.postsRoutes.put('/:id/disapprove', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postId = new Types.ObjectId(req.params.id);
+        // Load post
+        let post = yield post_1.PostObject.findById(postId);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners can approve/disapprove
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!(member === null || member === void 0 ? void 0 : member.owner)) {
+            return res.status(401).send("Unauthorized: You are not an owner of this team.");
+        }
+        let updatedPost = yield (0, bounties_1.removeBounty)(postId);
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send('Internal server error');
+    }
+}));

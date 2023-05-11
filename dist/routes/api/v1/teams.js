@@ -12,9 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamRoutes = void 0;
 const express_1 = require("express");
 const teams_1 = require("../../../services/teams");
-const thanks_1 = require("../../../services/thanks");
+const posts_1 = require("../../../services/posts");
 const users_1 = require("../../../services/users");
-const thankspost_1 = require("../../../models/thankspost");
+const post_1 = require("../../../models/post");
+const bounty_1 = require("../../../models/bounty");
 const Types = require('mongoose').Types;
 exports.teamRoutes = (0, express_1.Router)();
 exports.teamRoutes.get('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -178,17 +179,18 @@ exports.teamRoutes.post('/:teamid/prizes', (req, res) => __awaiter(void 0, void 
 }));
 exports.teamRoutes.post('/:teamid/pick-winners', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let dryRun = false;
-        if (req.body.dryRun) {
-            dryRun = true;
+        let dryRun = true;
+        if (!req.body.dryRun) {
+            dryRun = false;
         }
+        console.log('dryRun', dryRun);
         let teamid = new Types.ObjectId(req.params.teamid);
         // Check the user is a team owner
         let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
-        let results = yield (0, thanks_1.pickTeamWinners)(teamid, 0, dryRun);
+        let results = yield (0, posts_1.pickTeamWinners)(teamid, 0, dryRun);
         res.json({
             success: true,
             error: '',
@@ -228,7 +230,10 @@ exports.teamRoutes.get('/:id/bounties', (req, res) => __awaiter(void 0, void 0, 
         if (!usersMembership) {
             return res.status(401).send("Unauthorized: You are not a member of this team.");
         }
-        let bounties = yield (0, teams_1.getBounties)(teamid);
+        let bounties = yield bounty_1.BountyObject.find({ team: teamid, active: true })
+            .populate('ideas')
+            .populate('ideas.createdBy')
+            .sort({ name: 1 });
         res.json({
             success: true,
             error: '',
@@ -243,7 +248,7 @@ exports.teamRoutes.get('/:id/bounties', (req, res) => __awaiter(void 0, void 0, 
 exports.teamRoutes.post('/:teamid/bounties', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let teamid = new Types.ObjectId(req.params.teamid);
-        let bounty = req.body;
+        let bounty = new bounty_1.BountyObject(req.body);
         let missingFields = [];
         if (!bounty.team) {
             missingFields.push('team');
@@ -268,11 +273,11 @@ exports.teamRoutes.post('/:teamid/bounties', (req, res) => __awaiter(void 0, voi
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
-        let savedBounty = yield (0, teams_1.createBounty)(bounty);
+        yield bounty.save();
         res.json({
             success: true,
             error: '',
-            data: savedBounty
+            data: bounty
         });
     }
     catch (err) {
@@ -284,15 +289,19 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid', (req, res) => __awaiter(vo
     try {
         let teamid = new Types.ObjectId(req.params.teamid);
         let bountyid = new Types.ObjectId(req.params.bountyid);
-        let bounty = req.body;
+        let update = req.body;
         let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
+        let bounty = yield bounty_1.BountyObject.findById(bountyid);
+        if (!bounty) {
+            return res.status(404).send("Cannot find that bounty");
+        }
         if (String(bounty.team) != String(teamid)) {
             return res.status(401).send("Unauthorized: Bounty posted to the wrong URL");
         }
-        let updatedBounty = yield (0, teams_1.updateBounty)(bountyid, bounty);
+        let updatedBounty = yield bounty_1.BountyObject.findByIdAndUpdate(bountyid, { $set: update }, { new: true });
         res.json({
             success: true,
             error: '',
@@ -312,7 +321,7 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', (req, res) =
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
-        let bounty = yield (0, teams_1.getBounty)(bountyid);
+        let bounty = yield bounty_1.BountyObject.findById(bountyid);
         if (!bounty) {
             return res.status(404).send("No such bounty");
         }
@@ -332,34 +341,6 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', (req, res) =
         res.status(500).send('Internal server error');
     }
 }));
-exports.teamRoutes.post('/:teamid/bounties/:bountyid/ideas', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        let teamid = new Types.ObjectId(req.params.teamid);
-        let bountyid = new Types.ObjectId(req.params.bountyid);
-        let usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
-        if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
-            return res.status(401).send("Unauthorized: You are not a team owner");
-        }
-        let bounty = yield (0, teams_1.getBounty)(bountyid);
-        if (!bounty) {
-            return res.status(404).send("No such bounty");
-        }
-        if (String(bounty.team) != String(teamid)) {
-            return res.status(401).send("Unauthorized: Bounty does not belong to team");
-        }
-        bounty.ideas.push(req.body.postid);
-        yield bounty.save();
-        res.json({
-            success: true,
-            error: '',
-            data: bounty
-        });
-    }
-    catch (err) {
-        console.log(err);
-        res.status(500).send('Internal server error');
-    }
-}));
 exports.teamRoutes.get('/:id/sets', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let teamid = new Types.ObjectId(req.params.id);
@@ -368,7 +349,7 @@ exports.teamRoutes.get('/:id/sets', (req, res) => __awaiter(void 0, void 0, void
         if (!usersMembership) {
             return res.status(401).send('You are not a member of this team.');
         }
-        let sets = yield thankspost_1.ThanksSetObject.find({ team: teamid });
+        let sets = yield post_1.ThanksSetObject.find({ team: teamid });
         res.json({
             success: true,
             error: '',
@@ -392,8 +373,8 @@ exports.teamRoutes.get('/:id/getNextSet', (req, res) => __awaiter(void 0, void 0
         if (!team) {
             return res.status(404).send('Team not found');
         }
-        let dateRange = yield (0, thanks_1.figureOutDateRange)(team);
-        let sets = yield thankspost_1.ThanksSetObject.find({ team: teamid });
+        let dateRange = yield (0, posts_1.figureOutDateRange)(team);
+        let sets = yield post_1.ThanksSetObject.find({ team: teamid });
         res.json({
             success: true,
             error: '',
@@ -425,7 +406,7 @@ exports.teamRoutes.get('/:id/testPickingWinners', (req, res) => __awaiter(void 0
         if (!team) {
             return res.status(404).send('Team not found');
         }
-        let dateRange = yield (0, thanks_1.figureOutDateRange)(team);
+        let dateRange = yield (0, posts_1.figureOutDateRange)(team);
         res.json({
             success: true,
             error: '',

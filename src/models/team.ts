@@ -73,55 +73,7 @@ const teamSchema = new Schema<Team>({
 
 export const TeamObject = model('team',teamSchema);
 
-export interface TeamBounty {
-    createdBy: ObjectId,
-    created: Date,
-    team: ObjectId,    
-    name: String,
-    description: String,
-    amount: Number,
-    reward: String,
-    active: {
-        type: Boolean,
-        default: true
-    },
-    ideas: ObjectId[]
-    approvedIdeas: ObjectId[]
-}
 
-const teamBountySchema = new Schema<TeamBounty>({
-    created: {
-        type: Date,
-        default: Date.now
-        },
-    team: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'team'
-    },    
-    createdBy: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'membership'
-    },    
-    name: String,
-    description: String,
-    amount: Number,
-    reward: String,
-    active: {
-        type: Boolean,
-        default: true
-    },
-    ideas: [{
-        type: Schema.Types.ObjectId, 
-        ref: 'thanks_post'
-    }],
-    approvedIdeas: [{
-        type: Schema.Types.ObjectId, 
-        ref: 'thanks_post'
-    }]
-});
-
-export const TeamBountyObject = model('team_bounty',teamBountySchema);
-teamBountySchema.index({ "team": 1});
 
 export interface TeamPrize {
     _id: ObjectId,

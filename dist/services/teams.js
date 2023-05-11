@@ -9,13 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.updateBounty = exports.getBounty = exports.getBounties = exports.createBounty = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
 const smtp_1 = require("./smtp");
 const users_1 = require("./users");
 const utils_1 = require("./utils");
+const bounty_1 = require("../models/bounty");
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
     apiVersion: process.env.STRIPE_API_VERSION
 });
@@ -551,76 +552,6 @@ function importMembers(teamid, owner, text) {
         return [imported, rejected];
     });
 }
-function createBounty(bounty) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let bountyObject = new team_1.TeamBountyObject(bounty);
-        let newBounty = yield bountyObject.save();
-        let createdBy = yield membership_1.MembershipObject.findById(newBounty.createdBy);
-        var subject = `New Bounty: ${newBounty.name}`;
-        var body = `${createdBy.name} created a new bounty!\nTitle: ${newBounty.name}\n${bounty.description}\nReward: ${newBounty.reward}\nDo you have any ideas? Maybe you can claim the reward.`;
-        notifyTeam(newBounty.team, subject, body);
-        return newBounty;
-    });
-}
-exports.createBounty = createBounty;
-;
-function getBounties(teamid) {
-    var query = {
-        team: teamid
-    };
-    return team_1.TeamBountyObject.find(query)
-        .populate('createdBy')
-        .populate('approvedIdeas')
-        .populate({
-        path: 'approvedIdeas',
-        populate: {
-            path: 'createdBy',
-            model: 'membership'
-        }
-    })
-        .populate({
-        path: 'ideas',
-        populate: {
-            path: 'createdBy',
-            model: 'membership'
-        }
-    })
-        .sort({
-        name: 1
-    });
-}
-exports.getBounties = getBounties;
-function getBounty(bountyid) {
-    return team_1.TeamBountyObject.findById(bountyid);
-}
-exports.getBounty = getBounty;
-function activateBounty(bountyid) {
-    return team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
-        $set: {
-            active: true
-        }
-    }, {
-        new: true
-    });
-}
-function deactivateBounty(bountyid) {
-    return team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
-        $set: {
-            active: false
-        }
-    }, {
-        new: true
-    });
-}
-function updateBounty(bountyid, bounty) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var updatedBounty = yield team_1.TeamBountyObject.findByIdAndUpdate(bountyid, {
-            $set: bounty
-        }, { new: true });
-        return bounty;
-    });
-}
-exports.updateBounty = updateBounty;
 function incrementSentCount(memberid, count = 1) {
     return membership_1.MembershipObject.findByIdAndUpdate(memberid, {
         $inc: {
@@ -708,7 +639,7 @@ function deleteTeam(teamid) {
         var jobs = [];
         jobs.push(team_1.TeamObject.findByIdAndDelete(teamid));
         jobs.push(membership_1.MembershipObject.deleteMany({ team: teamid }));
-        jobs.push(team_1.TeamBountyObject.deleteMany({ team: teamid }));
+        jobs.push(bounty_1.BountyObject.deleteMany({ team: teamid }));
         jobs.push(team_1.TeamPrizeObject.deleteMany({ team: teamid }));
         yield Promise.all(jobs);
     });
@@ -747,14 +678,14 @@ function deleteOrphans() {
                 }
             });
         });
-        yield team_1.TeamBountyObject.find({})
+        yield bounty_1.BountyObject.find({})
             .populate('team')
             .cursor()
             .eachAsync(function (bounty) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (!bounty.team) {
                     console.log('delete bounty:', bounty._id);
-                    yield team_1.TeamBountyObject.findByIdAndDelete(bounty._id);
+                    yield bounty_1.BountyObject.findByIdAndDelete(bounty._id);
                 }
             });
         });

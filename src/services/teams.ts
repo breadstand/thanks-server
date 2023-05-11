@@ -1,14 +1,14 @@
-import { ConnectContactLens } from "aws-sdk";
 import { AnyARecord } from "dns";
 import { ObjectId } from "mongoose";
 import { Membership, MembershipContact, MembershipObject, TeamMember, UsersMembership } from "../models/membership";
-import { Team, TeamObject, TeamBountyObject, TeamPrizeObject, TeamPrize, TeamBounty } from "../models/team";
+import { Team, TeamObject, TeamPrizeObject, TeamPrize } from "../models/team";
 import { User, UserContact, UserObject } from "../models/user";
 import { smsSend } from "./sms";
 import { smtpSend } from "./smtp";
 import { findUserByContact } from "./users";
 import { sanitizeEmail, sanitizeName, sanitizePhone } from "./utils";
-import { PickWinnersResults } from "../models/thankspost";
+import { PickWinnersResults } from "../models/post";
+import { BountyObject } from "../models/bounty";
 
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
 	apiVersion: process.env.STRIPE_API_VERSION
@@ -587,77 +587,6 @@ async function importMembers(teamid: ObjectId, owner: Membership, text: string) 
 	return [imported, rejected];
 }
 
-export async function createBounty(bounty: TeamBounty) {
-	let bountyObject = new TeamBountyObject(bounty);
-	let newBounty = await bountyObject.save();
-	
-	let createdBy = await MembershipObject.findById(newBounty.createdBy)
-
-
-	var subject = `New Bounty: ${newBounty.name}`;
-	var body = `${createdBy.name} created a new bounty!\nTitle: ${newBounty.name}\n${bounty.description}\nReward: ${newBounty.reward}\nDo you have any ideas? Maybe you can claim the reward.`;
-	notifyTeam(newBounty.team, subject, body);
-
-	return newBounty
-};
-
-export function getBounties(teamid: ObjectId) {
-	var query = {
-		team: teamid
-	};
-	return TeamBountyObject.find(query)
-		.populate('createdBy')
-		.populate('approvedIdeas')
-		.populate({
-			path: 'approvedIdeas',
-			populate: {
-				path: 'createdBy',
-				model: 'membership'
-			}
-		})
-		.populate({
-			path: 'ideas',
-			populate: {
-				path: 'createdBy',
-				model: 'membership'
-			}
-		})
-		.sort({
-				name: 1
-			});
-}
-
-export function getBounty(bountyid: ObjectId) {
-	return TeamBountyObject.findById(bountyid);
-}
-
-
-function activateBounty(bountyid: ObjectId) {
-	return TeamBountyObject.findByIdAndUpdate(bountyid, {
-		$set: {
-			active: true
-		}
-	}, {
-		new: true
-	});
-}
-
-function deactivateBounty(bountyid: ObjectId) {
-	return TeamBountyObject.findByIdAndUpdate(bountyid, {
-		$set: {
-			active: false
-		}
-	}, {
-		new: true
-	});
-}
-
-export async function updateBounty(bountyid: string, bounty: TeamBounty) {
-	var updatedBounty = await TeamBountyObject.findByIdAndUpdate(bountyid, {
-		$set: bounty
-	}, { new: true });
-	return bounty;
-}
 
 export function incrementSentCount(memberid: ObjectId, count = 1) {
 	return MembershipObject.findByIdAndUpdate(memberid, {
@@ -751,7 +680,7 @@ export async function deleteTeam(teamid: ObjectId) {
 
 	jobs.push(TeamObject.findByIdAndDelete(teamid));
 	jobs.push(MembershipObject.deleteMany({ team: teamid }));
-	jobs.push(TeamBountyObject.deleteMany({ team: teamid }));
+	jobs.push(BountyObject.deleteMany({ team: teamid }));
 	jobs.push(TeamPrizeObject.deleteMany({ team: teamid }));
 
 	await Promise.all(jobs);
@@ -789,13 +718,13 @@ async function deleteOrphans() {
 			}
 		});
 
-	await TeamBountyObject.find({})
+	await BountyObject.find({})
 		.populate('team')
 		.cursor()
 		.eachAsync(async function (bounty: any) {
 			if (!bounty.team) {
 				console.log('delete bounty:', bounty._id);
-				await TeamBountyObject.findByIdAndDelete(bounty._id);
+				await BountyObject.findByIdAndDelete(bounty._id);
 			}
 		});
 

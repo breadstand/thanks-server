@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TeamPrizeObject = exports.TeamBountyObject = exports.TeamObject = void 0;
+exports.TeamPrizeObject = exports.TeamObject = void 0;
 const mongoose_1 = require("mongoose");
 const teamSchema = new mongoose_1.Schema({
     created: {
@@ -52,38 +52,6 @@ const teamSchema = new mongoose_1.Schema({
     }
 });
 exports.TeamObject = (0, mongoose_1.model)('team', teamSchema);
-const teamBountySchema = new mongoose_1.Schema({
-    created: {
-        type: Date,
-        default: Date.now
-    },
-    team: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'team'
-    },
-    createdBy: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'membership'
-    },
-    name: String,
-    description: String,
-    amount: Number,
-    reward: String,
-    active: {
-        type: Boolean,
-        default: true
-    },
-    ideas: [{
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'thanks_post'
-        }],
-    approvedIdeas: [{
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'thanks_post'
-        }]
-});
-exports.TeamBountyObject = (0, mongoose_1.model)('team_bounty', teamBountySchema);
-teamBountySchema.index({ "team": 1 });
 const teamPrizeSchema = new mongoose_1.Schema({
     created: {
         type: Date,
