@@ -231,6 +231,7 @@ exports.teamRoutes.get('/:id/bounties', (req, res) => __awaiter(void 0, void 0, 
             return res.status(401).send("Unauthorized: You are not a member of this team.");
         }
         let bounties = yield bounty_1.BountyObject.find({ team: teamid, active: true })
+            .populate('createdBy')
             .populate('ideas')
             .populate('ideas.createdBy')
             .sort({ name: 1 });

@@ -43,6 +43,7 @@ exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, fun
             .limit(limit)
             .populate('thanksTo')
             .populate('prize')
+            .populate('bounty')
             .populate('createdBy');
         res.json({
             success: true,
@@ -130,7 +131,7 @@ exports.postsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
-exports.postsRoutes.put('/:id/approve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.postsRoutes.put('/:id/set-approved', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let postid = new Types.ObjectId(req.params.id);
         // Load post
@@ -147,12 +148,22 @@ exports.postsRoutes.put('/:id/approve', (req, res) => __awaiter(void 0, void 0, 
         if (!(member === null || member === void 0 ? void 0 : member.owner)) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
-        let updatedPost = yield (0, bounties_1.approveBounty)(postid);
-        res.json({
-            success: true,
-            error: '',
-            data: updatedPost
-        });
+        if (req.body.approve) {
+            let updatedPost = yield (0, bounties_1.approveBounty)(postid);
+            res.json({
+                success: true,
+                error: '',
+                data: updatedPost
+            });
+        }
+        else {
+            let updatedPost = yield (0, bounties_1.removeBounty)(postid);
+            res.json({
+                success: true,
+                error: '',
+                data: updatedPost
+            });
+        }
     }
     catch (error) {
         console.log(error);

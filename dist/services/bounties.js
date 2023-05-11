@@ -41,7 +41,7 @@ function removeBounty(postid) {
         if (!post) {
             return;
         }
-        post.approved = true;
+        post.approved = false;
         yield post.save();
         return post;
     });
