@@ -8,7 +8,11 @@ const app:Application = express();
 
 import { verifyToken } from './services/utils';
 
-app.use(cors())
+app.use(cors({
+    origin: 'https://thanks-a919c.web.app'
+}
+
+))
 app.use(bodyParser.json())
 
 import { apiRootRoutes } from './routes/api/v1/index'
