@@ -12,39 +12,76 @@ export var postsRoutes = Router()
 postsRoutes.get('/', async (req, res) => {
 
     try {
+        let has_more = false
+        let has_more_after = false
+
         // We only want authorized team members to see the posts
         let teamid = new Types.ObjectId(req.query.team)
-        let member = await getMemberByUserId(teamid,req.userId)
+        let member = await getMemberByUserId(teamid, req.userId)
         if (!member) {
             throw "User is not a member of team"
         }
 
-        let limit = 100
 
         let query: any = {
             team: teamid,
             active: true
         };
-
-        if (req.body.limit) {
-            let newLimit = parseInt(req.body.limit)
-            if (newLimit <= 100) {
-                limit = newLimit
-            }
+        let sort: any = {
+            _id: 'desc'
         }
 
+        let limit = 50
+        if (req.query.limit) {
+            limit = Math.min(Number(req.query.limit), 100)
+        }
+
+        if (req.query.ending_before) {
+            has_more_after = true
+            query._id = { $lt: req.query.ending_before }
+            // Increase limit so we can detect has_more and has_more_before
+        }
+
+        if (req.query.starting_after) {
+            has_more = true
+            query._id = { $gt: req.query.starting_after }
+            sort._id = 'asc'
+            // Increase limit so we can detect has_more and has_more before
+        }
+
+        console.log(req.query)
         let posts = await PostObject.find(query)
-            .sort({
-                _id: -1
-            })
-            .limit(limit)
+            .sort(sort)
+            .limit(limit + 1)
             .populate('thanksTo')
             .populate('prize')
             .populate('bounty')
             .populate('createdBy');
 
-            res.json({
+        // When the query is "starting_after", the
+        // sort is reversed, so we have to reverse it back.
+        if (req.query.starting_after) {
+            if (posts.length >= limit + 1) {
+                has_more_after = true
+                posts.pop()
+            }
+            posts.sort((a: Post, b: Post) => {
+                if (a._id > b._id) {
+                    return -1
+                }
+                return 1
+            })
+        } else {
+            if (posts.length > limit) {
+                has_more = true
+                posts.pop()
+            }
+        }
+
+        res.json({
             success: true,
+            has_more: has_more,
+            has_more_after: has_more_after,
             error: '',
             data: posts
         })
@@ -63,7 +100,7 @@ postsRoutes.post('/', async (req, res) => {
         if (!newPost.team) {
             missingFields.push('team')
         }
-        if (!newPost.postType || (newPost.postType != 'thanks' && newPost.postType !='idea')) {
+        if (!newPost.postType || (newPost.postType != 'thanks' && newPost.postType != 'idea')) {
             missingFields.push('postType')
         }
         if (!newPost.thanksTo && !newPost.thanksFor && newPost.postType == 'thanks') {
@@ -76,13 +113,13 @@ postsRoutes.post('/', async (req, res) => {
         if (missingFields.length > 0) {
             return res.json({
                 success: false,
-                error: "The post is incomplete. It's missing the following fields: "+missingFields.join(', '),
+                error: "The post is incomplete. It's missing the following fields: " + missingFields.join(', '),
                 data: newPost
             })
         }
 
         // Only team owners or post owners can deactivePosts
-        let member = await getMemberByUserId(newPost.team,req.userId)
+        let member = await getMemberByUserId(newPost.team, req.userId)
         if (!member) {
             return res.status(401).send("You're not a member of the post's team.")
         }
@@ -121,7 +158,7 @@ postsRoutes.put('/:id/deactivate', async (req, res) => {
         }
 
         // Only team owners or post owners can deactivePosts
-        let member = await getMemberByUserId(post.team,req.userId)
+        let member = await getMemberByUserId(post.team, req.userId)
         if (!member) {
             return res.status(401).send("You're not a member of the team that posted this.")
         }
@@ -163,7 +200,7 @@ postsRoutes.put('/:id/set-approved', async (req, res) => {
         }
 
         // Only team owners can approve/disapprove
-        let member = await getMemberByUserId(post.team,req.userId)
+        let member = await getMemberByUserId(post.team, req.userId)
         if (!member?.owner) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }
@@ -208,7 +245,7 @@ postsRoutes.put('/:id/disapprove', async (req, res) => {
         }
 
         // Only team owners can approve/disapprove
-        let member = await getMemberByUserId(post.team,req.userId)
+        let member = await getMemberByUserId(post.team, req.userId)
         if (!member?.owner) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }

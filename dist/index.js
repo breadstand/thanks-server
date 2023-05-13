@@ -11,7 +11,9 @@ const mongoose = require('mongoose');
 const PORT = 3001;
 const app = (0, express_1.default)();
 const utils_1 = require("./services/utils");
-app.use(cors());
+app.use(cors({
+    origin: ['https://thanks-a919c.web.app', 'http://localhost:4201/']
+}));
 app.use(bodyParser.json());
 const index_1 = require("./routes/api/v1/index");
 app.use('/api/v1', index_1.apiRootRoutes);
