@@ -49,7 +49,10 @@ postsRoutes.get('/', async (req, res) => {
             // Increase limit so we can detect has_more and has_more before
         }
 
-        console.log(req.query)
+        if (req.query.post_type) {
+            query.postType = req.query.post_type
+        }
+
         let posts = await PostObject.find(query)
             .sort(sort)
             .limit(limit + 1)

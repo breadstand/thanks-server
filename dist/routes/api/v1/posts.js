@@ -19,34 +19,70 @@ const Types = require('mongoose').Types;
 exports.postsRoutes = (0, express_1.Router)();
 exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        let has_more = false;
+        let has_more_after = false;
         // We only want authorized team members to see the posts
         let teamid = new Types.ObjectId(req.query.team);
         let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!member) {
             throw "User is not a member of team";
         }
-        let limit = 100;
         let query = {
             team: teamid,
             active: true
         };
-        if (req.body.limit) {
-            let newLimit = parseInt(req.body.limit);
-            if (newLimit <= 100) {
-                limit = newLimit;
-            }
+        let sort = {
+            _id: 'desc'
+        };
+        let limit = 50;
+        if (req.query.limit) {
+            limit = Math.min(Number(req.query.limit), 100);
+        }
+        if (req.query.ending_before) {
+            has_more_after = true;
+            query._id = { $lt: req.query.ending_before };
+            // Increase limit so we can detect has_more and has_more_before
+        }
+        if (req.query.starting_after) {
+            has_more = true;
+            query._id = { $gt: req.query.starting_after };
+            sort._id = 'asc';
+            // Increase limit so we can detect has_more and has_more before
+        }
+        if (req.query.post_type) {
+            query.postType = req.query.post_type;
         }
         let posts = yield post_1.PostObject.find(query)
-            .sort({
-            _id: -1
-        })
-            .limit(limit)
+            .sort(sort)
+            .limit(limit + 1)
             .populate('thanksTo')
             .populate('prize')
             .populate('bounty')
             .populate('createdBy');
+        // When the query is "starting_after", the
+        // sort is reversed, so we have to reverse it back.
+        if (req.query.starting_after) {
+            if (posts.length >= limit + 1) {
+                has_more_after = true;
+                posts.pop();
+            }
+            posts.sort((a, b) => {
+                if (a._id > b._id) {
+                    return -1;
+                }
+                return 1;
+            });
+        }
+        else {
+            if (posts.length > limit) {
+                has_more = true;
+                posts.pop();
+            }
+        }
         res.json({
             success: true,
+            has_more: has_more,
+            has_more_after: has_more_after,
             error: '',
             data: posts
         });
