@@ -139,6 +139,45 @@ exports.postsRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.status(500).send('Internal server error');
     }
 }));
+exports.postsRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let postid = new Types.ObjectId(req.params.id);
+        // Load post
+        let post = yield post_1.PostObject.findById(postid);
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            });
+        }
+        // Only team owners or post owners can deactivePosts
+        let member = yield (0, teams_1.getMemberByUserId)(post.team, req.userId);
+        if (!member) {
+            return res.status(401).send("You're not a member of the team that posted this.");
+        }
+        if (!member.owner && String(member._id) != String(post.createdBy)) {
+            return res.status(401).send("You are not the team owner or creator.");
+        }
+        let update = {};
+        if (req.body.idea) {
+            update.idea = req.body.idea;
+        }
+        if (req.body.bounty) {
+            update.bounty = req.body.bounty;
+        }
+        let updatedPost = yield post_1.PostObject.findByIdAndUpdate(postid, update, { new: true });
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPost
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send('Internal server error');
+    }
+}));
 exports.postsRoutes.put('/:id/deactivate', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let postId = new Types.ObjectId(req.params.id);

@@ -258,13 +258,11 @@ teamRoutes.get('/:id/bounties', async (req, res) => {
         if (!usersMembership) {
             return res.status(401).send("Unauthorized: You are not a member of this team.")
         }
-
         let bounties = await BountyObject.find({team: teamid, active: true})
             .populate('createdBy')
             .populate('ideas')
             .populate('ideas.createdBy')
             .sort({name: 1})
-        console.log(bounties)
         res.json({
             success: true,
             error: '',
@@ -326,7 +324,6 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
         let bountyid = new Types.ObjectId(req.params.bountyid)
         let update: BountyUpdate = req.body
 
-        console.log(update)
         let usersMembership = await getMemberByUserId(teamid, req.userId)
         if (!usersMembership?.owner) {
             return res.status(401).send("Unauthorized: You are not a team owner")
@@ -342,12 +339,12 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
         }
 
         let updatedBounty = await BountyObject.findByIdAndUpdate(bountyid, {$set: update},{new: true})
-        console.log(updatedBounty)
         res.json({
             success: true,
             error: '',
             data: updatedBounty
         })
+
 
     } catch (err) {
         console.log(err)
