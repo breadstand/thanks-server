@@ -91,6 +91,11 @@ exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, voi
         if (!update.user) {
             update.user = null;
         }
+        if (update.owner) {
+            if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
+                authorized = false;
+            }
+        }
         if (authorized) {
             let membership = yield (0, teams_1.updateMember)(memberid, update);
             res.json({

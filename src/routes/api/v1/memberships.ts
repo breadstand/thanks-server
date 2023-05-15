@@ -95,6 +95,14 @@ membershipRoutes.put('/:id', async (req, res) => {
         if (!update.user) {
             update.user = null
         }
+
+        if (update.owner) {
+            if (!usersMembership?.owner) {
+                authorized = false
+            }
+        }
+
+
         if (authorized) {
             let membership = await updateMember(memberid, update)
             res.json({
