@@ -175,10 +175,12 @@ postsRoutes.put('/:id', async (req, res) => {
             return res.status(401).send("You are not the team owner or creator.")
         }
 
-        console.log(req.body) 
         let update: any = {}
         if (req.body.idea) {
             update.idea = req.body.idea
+        }
+        if (req.body.bounty) {
+            update.bounty = req.body.bounty
         }
 
         let updatedPost = await PostObject.findByIdAndUpdate(postid,update,{new: true})
