@@ -92,6 +92,9 @@ membershipRoutes.put('/:id', async (req, res) => {
         if (String(member.user) == String(req.userId)) {
             authorized = true
         }
+        if (!update.user) {
+            update.user = null
+        }
         if (authorized) {
             let membership = await updateMember(memberid, update)
             res.json({

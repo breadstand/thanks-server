@@ -88,6 +88,9 @@ exports.membershipRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, voi
         if (String(member.user) == String(req.userId)) {
             authorized = true;
         }
+        if (!update.user) {
+            update.user = null;
+        }
         if (authorized) {
             let membership = yield (0, teams_1.updateMember)(memberid, update);
             res.json({
