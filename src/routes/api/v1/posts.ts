@@ -52,6 +52,9 @@ postsRoutes.get('/', async (req, res) => {
         if (req.query.post_type) {
             query.postType = req.query.post_type
         }
+        if (req.query.winner) {
+            query.winner = req.query.winner
+        }
 
         let posts = await PostObject.find(query)
             .sort(sort)
@@ -141,6 +144,54 @@ postsRoutes.post('/', async (req, res) => {
         console.log(error)
         res.status(500).send('Internal server error')
 
+    }
+})
+
+
+
+
+postsRoutes.put('/:id', async (req, res) => {
+    try {
+        let postid = new Types.ObjectId(req.params.id)
+
+        // Load post
+        let post = await PostObject.findById(postid) as Post
+
+        if (!post.team) {
+            return res.json({
+                success: false,
+                error: 'Post is corrupt',
+                data: post
+            })
+        }
+
+        // Only team owners or post owners can deactivePosts
+        let member = await getMemberByUserId(post.team, req.userId)
+        if (!member) {
+            return res.status(401).send("You're not a member of the team that posted this.")
+        }
+
+        if (!member.owner && String(member._id) != String(post.createdBy)) {
+            return res.status(401).send("You are not the team owner or creator.")
+        }
+
+        console.log(req.body) 
+        let update: any = {}
+        if (req.body.idea) {
+            update.idea = req.body.idea
+        }
+
+        let updatedPost = await PostObject.findByIdAndUpdate(postid,update,{new: true})
+            res.json({
+                success: true,
+                error: '',
+                data: updatedPost
+            })
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).send('Internal server error')
     }
 })
 

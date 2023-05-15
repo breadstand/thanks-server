@@ -52,6 +52,9 @@ exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, fun
         if (req.query.post_type) {
             query.postType = req.query.post_type;
         }
+        if (req.query.winner) {
+            query.winner = req.query.winner;
+        }
         let posts = yield post_1.PostObject.find(query)
             .sort(sort)
             .limit(limit + 1)
