@@ -226,7 +226,7 @@ exports.postsRoutes.put('/:id/set-approved', (req, res) => __awaiter(void 0, voi
         if (!(member === null || member === void 0 ? void 0 : member.owner)) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.");
         }
-        if (req.body.approve) {
+        if (req.body.approved) {
             let updatedPost = yield (0, bounties_1.approveBounty)(postid);
             res.json({
                 success: true,

@@ -261,7 +261,7 @@ postsRoutes.put('/:id/set-approved', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }
 
-        if (req.body.approve) {
+        if (req.body.approved) {
             let updatedPost = await approveBounty(postid)
             res.json({
                 success: true,

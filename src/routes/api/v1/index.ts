@@ -6,6 +6,8 @@ import { User } from '../../../models/user';
 import { UserObject } from '../../../models/user';
 import { assignUserToMembersByContact } from '../../../services/teams';
 import { findUserAndVerifyCode, sendCodeToVerifyContact } from '../../../services/users'
+import { TeamObject } from '../../../models/team';
+import { Stats } from '../../../models/stats';
 
 const jwt = require('jsonwebtoken');
 
@@ -131,6 +133,32 @@ apiRootRoutes.post('/verify-code', async (req, res) => {
         res.status(500).send('Internal server error')
     }
 
+
+
+
 })
 
+apiRootRoutes.get('/stats', async (req, res) => {
+    try { 
+        let users = await UserObject.countDocuments()
+        let teams = await TeamObject.countDocuments()
+
+        let stats: Stats = {
+            users: users,
+            teams: teams
+        }
+
+        res.json({
+            success: false,
+            error: "",
+            data: stats
+        })
+    
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+
+    }
+
+})
 

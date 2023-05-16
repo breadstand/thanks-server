@@ -17,6 +17,7 @@ const post_1 = require("../../../models/post");
 const user_1 = require("../../../models/user");
 const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
+const team_1 = require("../../../models/team");
 const jwt = require('jsonwebtoken');
 exports.apiRootRoutes = (0, express_1.Router)();
 exports.apiRootRoutes.get('/', (req, res) => {
@@ -123,6 +124,25 @@ exports.apiRootRoutes.post('/verify-code', (req, res) => __awaiter(void 0, void 
                 data: null
             });
         }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.apiRootRoutes.get('/stats', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let users = yield user_1.UserObject.countDocuments();
+        let teams = yield team_1.TeamObject.countDocuments();
+        let stats = {
+            users: users,
+            teams: teams
+        };
+        res.json({
+            success: false,
+            error: "",
+            data: stats
+        });
     }
     catch (err) {
         console.log(err);

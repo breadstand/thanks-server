@@ -232,8 +232,13 @@ exports.teamRoutes.get('/:id/bounties', (req, res) => __awaiter(void 0, void 0, 
         }
         let bounties = yield bounty_1.BountyObject.find({ team: teamid, active: true })
             .populate('createdBy')
-            .populate('ideas')
-            .populate('ideas.createdBy')
+            .populate({
+            path: 'ideas',
+            populate: {
+                path: 'createdBy',
+                model: 'membership'
+            }
+        })
             .sort({ name: 1 });
         res.json({
             success: true,

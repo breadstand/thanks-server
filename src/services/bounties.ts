@@ -16,9 +16,12 @@ export async function approveBounty(postid: ObjectId) {
 
 	let subject = 'Bounty Approved: ' + post.idea;
 	let message = 'Your idea was approved for a bounty.\n' +
-		'Idea: ' + post.idea +
-		'Bounty: ' + bounty.name +
-		'Amount: ' + bounty.amount;
+		'Idea: ' + post.idea + '\n'
+		'Bounty: ' + bounty.name;
+	if (bounty.amount) {
+		message += '\nAmount: ' + bounty.amount;
+	}
+		
 	if (!post.createdBy) {
 		return post
 	}

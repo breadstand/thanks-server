@@ -11,8 +11,8 @@ function smsSend(phonenumber, message) {
     if (process.env.NODE_ENV == "development") {
         process.env.SMS_SENT_MESSAGE = JSON.stringify(smsMessage);
         return new Promise((resolve, reject) => {
-            //console.log('Send To:',phonenumber);
-            //console.log(message);
+            console.log('Send To:', phonenumber);
+            console.log(message);
             return resolve({ to: phonenumber });
         });
     }
