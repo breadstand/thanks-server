@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { TeamPrize } from "../../../models/team"
+import { TeamPrize, TeamPrizeObject } from "../../../models/team"
 import { User } from "../../../models/user"
 import { availablePrizes, createPrize, createTeam, deactivePrize, deleteTeam, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateTeam } from "../../../services/teams"
 import { figureOutDateRange, pickTeamWinners } from "../../../services/posts"
@@ -224,6 +224,59 @@ teamRoutes.post('/:teamid/pick-winners', async (req, res) => {
 })
 
 
+teamRoutes.put('/:teamid/prizes/:prizeid', async (req, res) => {
+    try {
+        let teamid = new Types.ObjectId(req.params.teamid)
+        let prizeid = new Types.ObjectId(req.params.prizeid)
+
+        let usersMembership = await getMemberByUserId(teamid, req.userId)
+        if (!usersMembership?.owner) {
+            return res.status(401).send("Unauthorized: You are not a team owner")
+        }
+
+        let prize = await TeamPrizeObject.findById(prizeid)
+        if (!prize) {
+            return res.status(404).send("Cannot find that prize")
+        }
+
+        if (String(prize.team) != String(teamid)) {
+            return res.status(401).send("Unauthorized: prize belongs to a different team")
+        }
+
+        let update = req.body
+        if (req.body.hasOwnProperty('name')) {
+            update.name = req.body.name
+        }
+        if (req.body.hasOwnProperty('description')) {
+            update.description = req.body.description
+        }
+        if (req.body.hasOwnProperty('image')) {
+            update.image = req.body.image
+        }
+        if (req.body.hasOwnProperty('url')) {
+            update.url = req.body.url
+        }
+        if (req.body.hasOwnProperty('imageHeight')) {
+            update.imageHeight = req.body.imageHeight
+        }
+        if (req.body.hasOwnProperty('imageWidth')) {
+            update.imageWidth = req.body.imageWidth
+        }
+        let updatedPrize = await TeamPrizeObject.findByIdAndUpdate(prizeid, {$set: update},{new: true})
+        res.json({
+            success: true,
+            error: '',
+            data: updatedPrize
+        })
+
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
 teamRoutes.delete('/:teamid/prizes/:prizeid', async (req, res) => {
     try {
         let teamid = new Types.ObjectId(req.params.teamid)
@@ -377,7 +430,7 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
             return res.status(401).send("Unauthorized: Bounty does not belong to team")
         }
         let subject = 'Bounty Reminder!'
-        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks-a919c.web.app/ to submit some ideas.`
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`
 
         notifyTeam(teamid,subject,body)
 
