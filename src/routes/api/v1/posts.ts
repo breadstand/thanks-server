@@ -188,14 +188,16 @@ postsRoutes.put('/:id', async (req, res) => {
         if (req.body.bounty) {
             update.bounty = req.body.bounty
         }
-
+        if (req.body.thanksFor) {
+            update.thanksFor = req.body.thanksFor
+        }
         let updatedPost = await PostObject.findByIdAndUpdate(postid,update,{new: true})
             res.json({
                 success: true,
                 error: '',
                 data: updatedPost
             })
-
+        
     }
     catch (error) {
         console.log(error)
