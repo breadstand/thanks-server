@@ -29,6 +29,7 @@ export function createPost(newPost: Post) {
 					incrementReceivedCount(thankspost.thanksTo as ObjectId)
 				]);
 			} else {
+				sendToBountyCreator(thankspost._id);
 				incrementIdeaCount(thankspost.createdBy as ObjectId)
 			}
 		}).then(results => {
@@ -37,7 +38,6 @@ export function createPost(newPost: Post) {
 };
 
 function sendToTeam(thanksid: ObjectId) {
-	console.log('sendToTeam()')
 	return PostObject.findById(thanksid)
 		.populate({
 			path: "createdBy"
@@ -60,6 +60,27 @@ function sendToTeam(thanksid: ObjectId) {
 		});
 }
 
+export function sendToBountyCreator(thanksid: ObjectId) {
+	return PostObject.findById(thanksid)
+		.populate({
+			path: "createdBy"
+		})
+		.populate({
+			path: "thanksTo"
+		})
+		.populate('bounty')
+		.then((post: any) => {
+			if (!post.bounty) {
+				return;
+			}
+			var subject = `New Idea For: ${post.bounty.name}!`;
+			var body = `${subject} ${post.createdBy.name} submitted an idea for: ${post.bounty.name}. ${post.idea} .https://thanks.breadstand.us.`;
+
+			return notifyMember(post.bounty.createdBy, subject, body);
+		}).catch(err => {
+			console.log(err);
+		});
+}
 
 
 export function getPosts(teamid: ObjectId, filter: any) {

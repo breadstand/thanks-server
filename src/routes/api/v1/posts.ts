@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { PostObject, Post, PostDetailed } from "../../../models/post"
 import { getMemberByUserId } from "../../../services/teams"
-import { createPost, deactivatePost, getPosts } from "../../../services/posts"
+import { createPost, deactivatePost, getPosts, sendToBountyCreator } from "../../../services/posts"
 import { approveBounty, removeBounty } from "../../../services/bounties"
 
 const Types = require('mongoose').Types
@@ -145,6 +145,10 @@ postsRoutes.post('/', async (req, res) => {
             success: true,
             data: post
         })
+
+
+
+
     }
     catch (error) {
         console.log(error)
@@ -197,7 +201,10 @@ postsRoutes.put('/:id', async (req, res) => {
                 error: '',
                 data: updatedPost
             })
-        
+
+        if (updatedPost?.bounty) {
+            sendToBountyCreator(updatedPost._id);
+        }
     }
     catch (error) {
         console.log(error)
