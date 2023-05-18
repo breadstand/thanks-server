@@ -114,12 +114,7 @@ imageRoutes.get('/:image', async (req, res) => {
       }  
     }
 
-
     let buffer = await loadImageFromAWS(image.key,width)
-    if (!buffer) {
-      return res.status(500).send('Server error')
-    }
-
     res.contentType(image.mimetype);
     return res.send(buffer);
   } catch (e) {

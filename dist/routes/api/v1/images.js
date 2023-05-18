@@ -112,9 +112,6 @@ exports.imageRoutes.get('/:image', (req, res) => __awaiter(void 0, void 0, void 
             }
         }
         let buffer = yield (0, images_1.loadImageFromAWS)(image.key, width);
-        if (!buffer) {
-            return res.status(500).send('Server error');
-        }
         res.contentType(image.mimetype);
         return res.send(buffer);
     }

@@ -1,51 +1,52 @@
-import { S3 } from "aws-sdk";
+import { DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 
 
 
 
-function convertToJpeg(imageBuffer:Buffer) {
-    var resize_params = { 
+function convertToJpeg(imageBuffer: Buffer) {
+    var resize_params = {
         width: 1500,
         options: {
             withoutEnlargement: true
-        } 
+        }
     };
 
-    return new Promise( (resolve,reject) => {
+    return new Promise((resolve, reject) => {
         sharp(imageBuffer)
-        .resize(resize_params)
-        .rotate()
-        .jpeg()
-        .toBuffer()
-        .then( data => {
-            return resolve(data);
-        }).catch( err => {
-            reject(err);
-        });
+            .resize(resize_params)
+            .rotate()
+            .jpeg()
+            .toBuffer()
+            .then(data => {
+                return resolve(data);
+            }).catch(err => {
+                reject(err);
+            });
     });
 }
 
 
-function resizeTo(imageBuffer:Buffer,width:number):Promise<Buffer> {
-    var resize_params = { 
+function resizeTo(imageBuffer: Buffer, width: number): Promise<Buffer> {
+    var resize_params = {
         width: width,
         options: {
             withoutEnlargement: true
-        } 
+        }
     };
 
-    return new Promise( (resolve,reject) => {
+    return new Promise((resolve, reject) => {
         sharp(imageBuffer)
-        .resize(resize_params)
-        .rotate()
-        .jpeg()
-        .toBuffer()
-        .then( data => {
-            return resolve(data);
-        }).catch( err => {
-            reject(err);
-        });
+            .resize(resize_params)
+            .rotate()
+            .jpeg()
+            .toBuffer()
+            .then(data => {
+                return resolve(data);
+            }).catch(err => {
+                reject(err);
+            });
     });
 }
 
@@ -66,10 +67,10 @@ just want a thumbnail. So this happens automatically.
 
 */
 
-export async function saveImageToAWS(key:string,buffer:Buffer,options={convertToJpeg: true, generateThumbnail: true}) {
+export async function saveImageToAWS(key: string, buffer: Buffer, options = { convertToJpeg: true, generateThumbnail: true }) {
     let jobs = [];
     let bufferForAWS = buffer;
-    let thumbnailBufferForAWS:any;
+    let thumbnailBufferForAWS: any;
 
     if (options.convertToJpeg) {
         jobs.push(convertToJpeg(buffer));
@@ -81,100 +82,63 @@ export async function saveImageToAWS(key:string,buffer:Buffer,options={convertTo
         bufferForAWS = results.shift() as Buffer;
     }
 
-    let s3 = new S3();
+    let s3client = new S3Client({ region: process.env.AWS_REGION });
 
-    let saveImageJob = new Promise( (resolve,reject) => {
-        let params:any = {
-            Body: bufferForAWS, 
-            Bucket: process.env.AWS_BUCKET_NAME, 
-            Key: key
-            };
-        s3.putObject(params, function(err, data) {
-            if (err) {
-                reject(err);
-            }// an error occurred
-            else  {
-                resolve(true);
-            }      
-        });     
-    });
-    jobs.push(saveImageJob);
+    let params: any = {
+        Body: bufferForAWS,
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key
+    };
+    let putResults = s3client.send(new PutObjectCommand(params))
 
-    return Promise.all(jobs);
+    return putResults;
 }
 
 
 // Size undefined by default.
 // size=='thumb' Loads the thumnail.
-export function loadImageFromAWS(key:string,width:number|null=null) {
+export async function loadImageFromAWS(key: string, width: number | null = null) {
     // Load main image
 
-    var s3 = new S3();
 
-    return new Promise( (resolve,reject) => {
-        if (!process.env.AWS_BUCKET_NAME) {
-            return reject('Missing process.env.AWS_BUCKET_NAME')
-        }
-        s3.getObject({
-            Bucket: process.env.AWS_BUCKET_NAME, 
-            Key: key
-        }, async function(err, data) {
-            if (err) {
-                resolve(null);
-            }
-            let image = data.Body
-            if (width) {
-                image = await resizeTo(data.Body as Buffer,width)
-            }
-            resolve(image)
-        });
-    });
+    let s3client = new S3Client({ region: process.env.AWS_REGION });
+
+    let input = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key
+    }
+    let response = await s3client.send(new GetObjectCommand(input))
+    if (!response.Body) {
+        return
+    }
+
+    let bodyAsArray = await response.Body.transformToByteArray()
+    let image = Buffer.from(bodyAsArray)
+    if (width) {
+        image = await resizeTo(image, width)
+    }
+    return image
 }
 
 
-export function deleteImageBuffer(imageId:string) {
+export async function deleteImageBuffer(imageId: string) {
     // Load main image
-    var s3 = new S3();
-    var job1 =  new Promise( (resolve,reject) => {
-        if (!process.env.AWS_BUCKET_NAME) {
-            return reject('Missing process.env.AWS_BUCKET_NAME')
-        }
 
-        s3.deleteObject( {
-            Bucket: process.env.AWS_BUCKET_NAME, 
-            Key: imageId
-            }, function(err, data) {
-            if (err) {
-                reject(err);
-            }
-            if (!data.DeleteMarker) {
-                resolve(true);
-            }
-            resolve(false);
-        });
-    });
+    let s3client = new S3Client({ region: process.env.AWS_REGION });
 
-    var job2 =  new Promise( (resolve,reject) => {
-        if (!process.env.AWS_BUCKET_NAME) {
-            return reject('Missing process.env.AWS_BUCKET_NAME')
-        }
+    let input = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: imageId
+    }
+
+    let response = await s3client.send(new DeleteObjectCommand(input))
+    let inputThumb = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: imageId+'-thumb'
+    }
+    let responseThumb = await s3client.send(new DeleteObjectCommand(inputThumb))
 
 
-        s3.deleteObject({
-            Bucket: process.env.AWS_BUCKET_NAME, 
-            Key: imageId+'-thumb'
-            }, function(err, data) {
-            if (err) {
-                reject(err);
-            }
-            if (!data.DeleteMarker) {
-                resolve(true);
-            }
-            resolve(false);
-        });
-    });
-
-    return Promise.all([job1,job2]);
 }
 
 
