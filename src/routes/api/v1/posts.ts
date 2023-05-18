@@ -55,6 +55,12 @@ postsRoutes.get('/', async (req, res) => {
         if (req.query.winner) {
             query.winner = req.query.winner
         }
+        if (req.query.created_by) {
+            query.createdBy = new Types.ObjectId(req.query.created_by)
+        }
+        if (req.query.thanks_to) {
+            query.thanksTo = new Types.ObjectId(req.query.thanks_to)
+        }
 
         let posts = await PostObject.find(query)
             .sort(sort)
