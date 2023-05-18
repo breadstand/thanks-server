@@ -359,7 +359,7 @@ teamRoutes.post('/:teamid/bounties', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not a team owner")
         }
 
-
+        bounty.createdBy = usersMembership._id
 
         await bounty.save()
         res.json({
@@ -367,6 +367,15 @@ teamRoutes.post('/:teamid/bounties', async (req, res) => {
             error: '',
             data: bounty
         })
+
+        let subject = 'New Bounty'
+        let body = `${usersMembership.name} created a new bounty called: ${bounty.name}.`
+        body += ` ${bounty.description}`
+        if (bounty.reward) {
+            body += ` Reward: ${bounty.reward}`
+        }
+        body += ` Do you have any ideas? .https://thanks.breadstand.us.`
+        notifyTeam(teamid,subject,body)
 
     } catch (err) {
         console.log(err)
