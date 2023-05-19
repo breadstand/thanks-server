@@ -2,7 +2,7 @@ import { Router } from "express"
 import { TeamPrize, TeamPrizeObject } from "../../../models/team"
 import { User } from "../../../models/user"
 import { availablePrizes, createPrize, createTeam, deactivePrize, deleteTeam, getMemberByUserId, getTeam, getUsersMemberships, notifyTeam, updateTeam } from "../../../services/teams"
-import { figureOutDateRange, pickTeamWinners } from "../../../services/posts"
+import { figureOutDateRange, pickTeamWinners, pickWinners } from "../../../services/posts"
 import { getUser } from "../../../services/users"
 import { ThanksSetObject } from "../../../models/post"
 import { Bounty, BountyObject, BountyUpdate } from "../../../models/bounty"
@@ -34,6 +34,19 @@ teamRoutes.get('/:teamid', async (req, res) => {
 
 })
 
+teamRoutes.post('/pick-winners-iris', async (req, res) => {
+    try {
+        let results = await pickWinners()
+        res.json({
+            success: true,
+            error: '',
+            data: results
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
 
 
 teamRoutes.post('/', async (req, res) => {
@@ -439,7 +452,11 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
             return res.status(401).send("Unauthorized: Bounty does not belong to team")
         }
         let subject = 'Bounty Reminder!'
-        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}.` 
+        if (bounty.reward) {
+            body += ` Reward: ${bounty.reward}`
+        }
+        body += ` Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`
 
         notifyTeam(teamid,subject,body)
 

@@ -326,12 +326,21 @@ exports.teamRoutes.post('/:teamid/bounties', (req, res) => __awaiter(void 0, voi
         if (!(usersMembership === null || usersMembership === void 0 ? void 0 : usersMembership.owner)) {
             return res.status(401).send("Unauthorized: You are not a team owner");
         }
+        bounty.createdBy = usersMembership._id;
         yield bounty.save();
         res.json({
             success: true,
             error: '',
             data: bounty
         });
+        let subject = 'New Bounty';
+        let body = `${usersMembership.name} created a new bounty called: ${bounty.name}.`;
+        body += ` ${bounty.description}`;
+        if (bounty.reward) {
+            body += ` Reward: ${bounty.reward}`;
+        }
+        body += ` Do you have any ideas? .https://thanks.breadstand.us.`;
+        (0, teams_1.notifyTeam)(teamid, subject, body);
     }
     catch (err) {
         console.log(err);
@@ -382,7 +391,11 @@ exports.teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', (req, res) =
             return res.status(401).send("Unauthorized: Bounty does not belong to team");
         }
         let subject = 'Bounty Reminder!';
-        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}. Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`;
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}.`;
+        if (bounty.reward) {
+            body += ` Reward: ${bounty.reward}`;
+        }
+        body += ` Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`;
         (0, teams_1.notifyTeam)(teamid, subject, body);
         res.json({
             success: true,

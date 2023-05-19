@@ -1,6 +1,6 @@
 import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
-import { Team, TeamPrize, TeamPrizeObject } from "../models/team";
+import { Team, TeamObject, TeamPrize, TeamPrizeObject } from "../models/team";
 import { Post, PostDetailed, ThanksSetObject, ThanksSet, PostObject, PickWinnersResults } from "../models/post";
 import { availablePrizes, awardPrizeTo, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
 
@@ -386,11 +386,12 @@ async function getWinners(setid: ObjectId): Promise<Post[]> {
 			_id: -1
 		});
 }
-/*
 
 
-async function pickWinners() {
+export async function pickWinners() {
 	var processed = 0;
+
+	let teams = await TeamObject.find({active: 1})
 	await teams.forEach(async function (team, i) {
 			await pickTeamWinners(team._id).catch(err => {
 				console.log(err);
@@ -399,7 +400,7 @@ async function pickWinners() {
 		});
 	return processed;
 }
-
+/*
 
 async function getTrendingByTeam(teamid) {
 	var results = [];

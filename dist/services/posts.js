@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.createPost = void 0;
+exports.deactivatePost = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.sendToBountyCreator = exports.createPost = void 0;
 const team_1 = require("../models/team");
 const post_1 = require("../models/post");
 const teams_1 = require("./teams");
@@ -31,6 +31,7 @@ function createPost(newPost) {
             ]);
         }
         else {
+            sendToBountyCreator(thankspost._id);
             (0, teams_1.incrementIdeaCount)(thankspost.createdBy);
         }
     }).then(results => {
@@ -40,7 +41,6 @@ function createPost(newPost) {
 exports.createPost = createPost;
 ;
 function sendToTeam(thanksid) {
-    console.log('sendToTeam()');
     return post_1.PostObject.findById(thanksid)
         .populate({
         path: "createdBy"
@@ -62,6 +62,27 @@ function sendToTeam(thanksid) {
         console.log(err);
     });
 }
+function sendToBountyCreator(thanksid) {
+    return post_1.PostObject.findById(thanksid)
+        .populate({
+        path: "createdBy"
+    })
+        .populate({
+        path: "thanksTo"
+    })
+        .populate('bounty')
+        .then((post) => {
+        if (!post.bounty) {
+            return;
+        }
+        var subject = `New Idea For: ${post.bounty.name}!`;
+        var body = `${subject} ${post.createdBy.name} submitted an idea for: ${post.bounty.name}. ${post.idea} .https://thanks.breadstand.us.`;
+        return (0, teams_1.notifyMember)(post.bounty.createdBy, subject, body);
+    }).catch(err => {
+        console.log(err);
+    });
+}
+exports.sendToBountyCreator = sendToBountyCreator;
 function getPosts(teamid, filter) {
     var count = 20;
     var query = {

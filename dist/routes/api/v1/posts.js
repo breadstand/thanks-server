@@ -172,12 +172,18 @@ exports.postsRoutes.put('/:id', (req, res) => __awaiter(void 0, void 0, void 0, 
         if (req.body.bounty) {
             update.bounty = req.body.bounty;
         }
+        if (req.body.thanksFor) {
+            update.thanksFor = req.body.thanksFor;
+        }
         let updatedPost = yield post_1.PostObject.findByIdAndUpdate(postid, update, { new: true });
         res.json({
             success: true,
             error: '',
             data: updatedPost
         });
+        if (updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.bounty) {
+            (0, posts_1.sendToBountyCreator)(updatedPost._id);
+        }
     }
     catch (error) {
         console.log(error);
