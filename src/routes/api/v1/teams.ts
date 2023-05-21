@@ -111,9 +111,11 @@ teamRoutes.put('/:teamid', async (req, res) => {
 
 teamRoutes.delete('/:teamid', async (req, res) => {
     try {
+        console.log('delete team')
         let teamid = new Types.ObjectId(req.params.teamid)
         let member = await getMemberByUserId(teamid, req.userId)
 
+        console.log(member)
         if (!member?.owner) {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }

@@ -3,6 +3,7 @@ import { PostObject, Post, PostDetailed } from "../../../models/post"
 import { getMemberByUserId } from "../../../services/teams"
 import { createPost, deactivatePost, getPosts, sendToBountyCreator } from "../../../services/posts"
 import { approveBounty, removeBounty } from "../../../services/bounties"
+import { rmSync } from "fs"
 
 const Types = require('mongoose').Types
 
@@ -19,7 +20,7 @@ postsRoutes.get('/', async (req, res) => {
         let teamid = new Types.ObjectId(req.query.team)
         let member = await getMemberByUserId(teamid, req.userId)
         if (!member) {
-            throw "User is not a member of team"
+            return res.status(401).send('User is not a member of this team.')
         }
 
 
