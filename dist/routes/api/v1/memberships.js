@@ -22,6 +22,9 @@ exports.membershipRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0
         if (req.query.teamid) {
             let teamId = new Types.ObjectId(req.query.teamid);
             memberships = yield (0, teams_1.getMemberships)(teamId);
+            if (memberships.length == 0) {
+                return res.status(404).send('Team does not exist');
+            }
             // Make sure user is on the team
             let foundUser = memberships.find((member) => (String(member.user) == String(req.userId)));
             if (!foundUser) {

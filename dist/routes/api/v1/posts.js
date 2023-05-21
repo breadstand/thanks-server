@@ -25,7 +25,7 @@ exports.postsRoutes.get('/', (req, res) => __awaiter(void 0, void 0, void 0, fun
         let teamid = new Types.ObjectId(req.query.team);
         let member = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
         if (!member) {
-            throw "User is not a member of team";
+            return res.status(401).send('User is not a member of this team.');
         }
         let query = {
             team: teamid,

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.sendToBountyCreator = exports.createPost = void 0;
+exports.deactivatePost = exports.pickWinners = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.sendToBountyCreator = exports.createPost = void 0;
 const team_1 = require("../models/team");
 const post_1 = require("../models/post");
 const teams_1 = require("./teams");
@@ -364,20 +364,23 @@ function getWinners(setid) {
         });
     });
 }
-/*
-
-
-async function pickWinners() {
-    var processed = 0;
-    await teams.forEach(async function (team, i) {
-            await pickTeamWinners(team._id).catch(err => {
-                console.log(err);
+function pickWinners() {
+    return __awaiter(this, void 0, void 0, function* () {
+        var processed = 0;
+        let teams = yield team_1.TeamObject.find({ active: 1 });
+        yield teams.forEach(function (team, i) {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield pickTeamWinners(team._id).catch(err => {
+                    console.log(err);
+                });
+                processed++;
             });
-            processed++;
         });
-    return processed;
+        return processed;
+    });
 }
-
+exports.pickWinners = pickWinners;
+/*
 
 async function getTrendingByTeam(teamid) {
     var results = [];
