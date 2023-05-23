@@ -112,21 +112,15 @@ export async function deleteUser(userId: ObjectId) {
 	}
 };
 
-async function getStripeCustomerId(user:User,byUserId:ObjectId) {
+export async function getStripeCustomerId(user:User,byUserId:ObjectId) {
 	if (user.stripeCustomerId) {
 		return user.stripeCustomerId;
 	}
 	let result;
 
-    let email = user.contacts.find( contact => contact.contactType =='email')
-    if (!email) {
-        throw "User does not have email. Email required."
-    }
 	result = await stripe.customers.create({
-		email: email,
-		name: user.name
 	});
-	let change = new Change({
+	let change = new ChangeObject({
         item: 'user',
         id: user._id,
         user: byUserId,
