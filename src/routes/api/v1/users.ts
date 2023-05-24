@@ -171,7 +171,6 @@ userRoutes.get('/:userid/payment_methods', async (req, res) => {
 
 
         let customer = results[0] as Stripe.Customer;
-        console.log(customer)
         let defaultPaymentMethod = ''
 
         let paymentMethods: Stripe.ApiList<Stripe.PaymentMethod> = results[1];
@@ -222,6 +221,94 @@ userRoutes.get('/:userid/payment_methods/secret', async (req, res) => {
 
 });
 
+
+
+userRoutes.post('/:userid/payment_methods/:methodid/make_default', async (req,res) => {
+    try {
+        let user = await getUser(req.userId)
+        if (!user) {
+            return res.status(404).send('User does not exist')
+        }
+
+        let stripeCustomerId = await getStripeCustomerId(user, req.userId)
+
+        let customer = await stripe.customers.update(stripeCustomerId,{
+            invoice_settings: {
+                default_payment_method: req.params.methodid
+            }});
+
+        let defaultPaymentMethod = ''
+        if (customer.invoice_settings) {
+            defaultPaymentMethod = customer.invoice_settings.default_payment_method as string;
+        }
+
+        
+        res.json({
+            success: true,
+            data: {
+                defaultPaymentMethod: defaultPaymentMethod,
+            } 
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+});
+
+
+userRoutes.delete('/:userid/payment_methods/:methodid',async (req,res) => {
+    try {
+        let user = await getUser(req.userId)
+        if (!user) {
+            return res.status(404).send('User does not exist')
+        }
+        let stripeCustomerId = await getStripeCustomerId(user, req.userId)
+        
+        let paymentMethod = await stripe.paymentMethods.retrieve(req.params.methodid)
+
+        if (paymentMethod.customer != stripeCustomerId) {
+            return res.status(401).send('User does not own this method')
+        }
+
+        await stripe.paymentMethods.detach(req.params.methodid);
+        
+        let results = await Promise.all([
+            stripe.customers.retrieve(user.stripeCustomerId),
+            stripe.paymentMethods.list({
+                customer: user.stripeCustomerId,
+                type: 'card',
+            })
+        ]);
+
+
+        let customer = results[0] as Stripe.Customer;
+        console.log(customer)
+        let defaultPaymentMethod = ''
+
+        let paymentMethods: Stripe.ApiList<Stripe.PaymentMethod> = results[1];
+
+        let numberOfPaymentMethods = paymentMethods.data.length
+        if (customer.invoice_settings) {
+            defaultPaymentMethod = customer.invoice_settings.default_payment_method as string;
+        }
+
+
+        return res.json({
+            success: true,
+            data: {
+                paymentMethods: paymentMethods.data,
+                defaultPaymentMethod: defaultPaymentMethod,
+                numberOfPaymentMethods: numberOfPaymentMethods
+            }
+        });
+
+        
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+});
 
 /*
 userRoutes.get('/:userid/paymentmethods/add',
