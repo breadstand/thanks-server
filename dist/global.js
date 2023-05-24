@@ -3,6 +3,7 @@
 
 declare namespace Express {
     export interface Request {
-       userId?: ObjectId
+       userId?: ObjectId,
+       team: Team
     }
  }*/ 

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getStripeCustomerId = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -481,6 +481,7 @@ function getStripeCustomerId(team) {
         });
     });
 }
+exports.getStripeCustomerId = getStripeCustomerId;
 ;
 /*
   Determines the day of the month on which to create a bill.

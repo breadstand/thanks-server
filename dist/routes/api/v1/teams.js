@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.teamRoutes = void 0;
 const express_1 = require("express");
@@ -18,7 +21,31 @@ const users_1 = require("../../../services/users");
 const post_1 = require("../../../models/post");
 const bounty_1 = require("../../../models/bounty");
 const Types = require('mongoose').Types;
+const stripe_1 = __importDefault(require("stripe"));
+let stripeKey = process.env.STRIPE_PRIVATE_KEY;
+if (!stripeKey) {
+    stripeKey = '';
+}
+const stripe = new stripe_1.default(stripeKey, {
+    apiVersion: '2022-11-15',
+});
 exports.teamRoutes = (0, express_1.Router)();
+function allowTeamOwnersOnly(req, res, next) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        let teamid = new Types.ObjectId(req.params.id);
+        req.team = yield (0, teams_1.getTeam)(teamid);
+        if (!req.team) {
+            return res.status(404).send('Team does not exist');
+        }
+        // Only team members can see the sets
+        req.usersMembership = yield (0, teams_1.getMemberByUserId)(teamid, req.userId);
+        if (!((_a = req.usersMembership) === null || _a === void 0 ? void 0 : _a.owner)) {
+            return res.status(401).send('You are not an owner of this team.');
+        }
+        next();
+    });
+}
 exports.teamRoutes.get('/:teamid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let teamid = new Types.ObjectId(req.params.teamid);
@@ -506,3 +533,288 @@ exports.teamRoutes.get('/:id/testPickingWinners', (req, res) => __awaiter(void 0
         res.status(500).send('Internal server error');
     }
 }));
+exports.teamRoutes.get('/:id/payment_methods', allowTeamOwnersOnly, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let stripeCustomerId = yield (0, teams_1.getStripeCustomerId)(req.team);
+        let results = yield Promise.all([
+            stripe.customers.retrieve(req.team.stripeCustomerId),
+            stripe.paymentMethods.list({
+                customer: req.team.stripeCustomerId,
+                type: 'card',
+            })
+        ]);
+        let customer = results[0];
+        let defaultPaymentMethod = '';
+        let paymentMethods = results[1];
+        let numberOfPaymentMethods = paymentMethods.data.length;
+        if (customer.invoice_settings) {
+            defaultPaymentMethod = customer.invoice_settings.default_payment_method;
+        }
+        return res.json({
+            success: true,
+            data: {
+                paymentMethods: paymentMethods.data,
+                defaultPaymentMethod: defaultPaymentMethod,
+                numberOfPaymentMethods: numberOfPaymentMethods
+            }
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.get('/:id/payment_methods/secret', allowTeamOwnersOnly, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let setupIntent = yield stripe.setupIntents.create({
+            customer: req.team.stripeCustomerId,
+            payment_method_types: ['card'],
+        });
+        res.json({
+            client_secret: setupIntent.client_secret
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.post('/:id/payment_methods/:methodid/make_default', allowTeamOwnersOnly, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let customer = yield stripe.customers.update(req.team.stripeCustomerId, {
+            invoice_settings: {
+                default_payment_method: req.params.methodid
+            }
+        });
+        let defaultPaymentMethod = '';
+        if (customer.invoice_settings) {
+            defaultPaymentMethod = customer.invoice_settings.default_payment_method;
+        }
+        res.json({
+            success: true,
+            data: {
+                defaultPaymentMethod: defaultPaymentMethod,
+            }
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.delete('/:id/payment_methods/:methodid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let paymentMethod = yield stripe.paymentMethods.retrieve(req.params.methodid);
+        if (paymentMethod.customer != req.team.stripeCustomerId) {
+            return res.status(401).send('User does not own this method');
+        }
+        yield stripe.paymentMethods.detach(req.params.methodid);
+        let results = yield Promise.all([
+            stripe.customers.retrieve(req.team.stripeCustomerId),
+            stripe.paymentMethods.list({
+                customer: req.team.stripeCustomerId,
+                type: 'card',
+            })
+        ]);
+        let customer = results[0];
+        console.log(customer);
+        let defaultPaymentMethod = '';
+        let paymentMethods = results[1];
+        let numberOfPaymentMethods = paymentMethods.data.length;
+        if (customer.invoice_settings) {
+            defaultPaymentMethod = customer.invoice_settings.default_payment_method;
+        }
+        return res.json({
+            success: true,
+            data: {
+                paymentMethods: paymentMethods.data,
+                defaultPaymentMethod: defaultPaymentMethod,
+                numberOfPaymentMethods: numberOfPaymentMethods
+            }
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+/*
+userRoutes.get('/:userid/paymentmethods/add',
+    security.allowUserOnly,async(req,res) => {
+    try {
+        return utils.renderPage(req,res,'users/paymentmethods/add.pug',{
+            userBeingViewed: req.userBeingViewed
+        });
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+
+});
+
+userRoutes.post('/:userid/paymentmethods/add',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        let stripeCustomerId = await users.getStripeCustomerId(req.userBeingViewed);
+        let paymentMethod = await stripe.paymentMethods.attach(req.body.paymentMethod,
+            {customer: stripeCustomerId});
+        let customer = await stripe.customers.update(stripeCustomerId,{
+            invoice_settings: {
+                default_payment_method: paymentMethod.id
+            }
+        });
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch(e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+
+userRoutes.get('/:userid/paymentmethods/add-bank-account',
+    security.allowUserOnly,async(req,res) => {
+    try {
+        
+        let errors = [];
+        if (req.session.errors) {
+            errors = req.session.errors;
+            delete req.session.errors;
+        }
+        let formValues = {};
+        if (req.session.formValues) {
+            formValues = req.session.formValues;
+            delete req.session.formValues;
+        }
+
+        return utils.renderPage(req,res,'users/paymentmethods/add-bank-account.pug',{
+            formValues: formValues,
+            errors: errors
+        });
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+
+});
+
+userRoutes.post('/:userid/paymentmethods/add-bank-account',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        let stripeCustomerId = await users.getStripeCustomerId(req.userBeingViewed);
+        //console.log(req.body);
+        let result = await stripe.customers.createSource(stripeCustomerId,
+            {
+                source: {
+                    object: 'bank_account',
+                    country: 'US',
+                    currency: 'usd',
+                    account_holder_name: req.body.account_holder_name,
+                    account_holder_type: req.body.account_holder_type,
+                    routing_number: req.body.routing_number,
+                    account_number: req.body.account_number
+                }
+            }
+          );
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch(e) {
+        if (e.type == 'StripeInvalidRequestError') {
+            req.session.errors = [{msg: e.raw.message}];
+            req.session.formValues = req.body;
+            return res.redirect(`/users/${req.params.userid}/paymentmethods/add-bank-account`);
+        }
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+userRoutes.post('/:userid/paymentmethods/:paymentmethodid/delete',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        await stripe.paymentMethods.detach(req.params.paymentmethodid);
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+userRoutes.post('/:userid/paymentmethods/:paymentmethodid/delete-bank-account',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        await stripe.customers.deleteSource(
+            req.userBeingViewed.stripeCustomerId,
+            req.params.paymentmethodid);
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+
+userRoutes.post('/:userid/paymentmethods/:paymentmethodid/make-default',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        let customer = await stripe.customers.update(req.userBeingViewed.stripeCustomerId,{
+            invoice_settings: {
+                default_payment_method: req.params.paymentmethodid
+            }});
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+
+userRoutes.post('/:userid/paymentmethods/:paymentmethodid/make-default-bank-account',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        let customer = await stripe.customers.update(req.userBeingViewed.stripeCustomerId,{
+            default_source: req.params.paymentmethodi,
+            invoice_settings: {
+                default_payment_method: null
+            }});
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+
+
+userRoutes.get('/:userid/paymentmethods/:paymentmethodid/verify-bank-account',
+    security.allowUserOnly,async(req,res) => {
+    try {
+        let errors = [];
+        if (req.session.errors) {
+            errors = req.session.errors;
+            delete req.session.errors;
+        }
+
+        return utils.renderPage(req,res,'users/paymentmethods/verify-bank-account.pug',{
+            paymentMethodId: req.params.paymentmethodid,
+            errors: errors
+        });
+    } catch (e) {
+        return utils.goToErrorPage(req,res,e);
+    }
+
+});
+
+userRoutes.post('/:userid/paymentmethods/:paymentmethodid/verify-bank-account',
+    security.allowUserOnly,async (req,res) => {
+    try {
+        let stripeCustomerId = await users.getStripeCustomerId(req.userBeingViewed);
+        //console.log(req.body);
+
+        amount1 = parseInt(req.body.amount1);
+        amount2 = parseInt(req.body.amount2);
+        let result = await stripe.customers.verifySource(
+            stripeCustomerId,
+            req.params.paymentmethodid,
+            { amounts: [amount1, amount2]});
+
+        return res.redirect(`/users/${req.params.userid}/paymentmethods`);
+    } catch(e) {
+        if (e.type == 'StripeInvalidRequestError') {
+            req.session.errors = [{msg: e.raw.message}];
+            return res.redirect(`/users/${req.params.userid}/paymentmethods/${req.params.paymentmethodid}/verify-bank-account`);
+        }
+        
+        return utils.goToErrorPage(req,res,e);
+    }
+});
+*/ 

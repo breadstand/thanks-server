@@ -9,6 +9,7 @@ import { findUserByContact } from "./users";
 import { sanitizeEmail, sanitizeName, sanitizePhone } from "./utils";
 import { PickWinnersResults } from "../models/post";
 import { BountyObject } from "../models/bounty";
+import { ChangeObject } from "../models/change";
 
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY, {
 	apiVersion: process.env.STRIPE_API_VERSION
@@ -488,7 +489,7 @@ function getOwners(teamid: ObjectId): Promise<Membership[]> {
 }
 
 
-function getStripeCustomerId(team: Team) {
+export function getStripeCustomerId(team: Team) {
 	return new Promise((resolve, reject) => {
 		if (team.stripeCustomerId) {
 			return resolve(team.stripeCustomerId);
@@ -868,3 +869,4 @@ export async function assignUserToMembersByContact(contact: string, contactType:
 	}
 
 }
+
