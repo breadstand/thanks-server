@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getStripeCustomerId = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
+exports.updateStripeQuantity = exports.assignUserToMembersByContact = exports.getMemberById = exports.deactivePrize = exports.awardPrizeTo = exports.nextAvailablePrize = exports.availablePrizes = exports.createPrize = exports.deleteTeam = exports.updateMember = exports.updateTeam = exports.incrementIdeaCount = exports.incrementReceivedCount = exports.incrementSentCount = exports.getStripeSubscriptionId = exports.getStripeCustomerId = exports.getTeam = exports.notifyOwners = exports.notifyTeam = exports.notifyMember = exports.deactivateMember = exports.updateMemberCount = exports.getMemberships = exports.getMemberByUserId = exports.createTeam = exports.createTeamName = exports.getUsersMemberships = exports.addMemberByContact = void 0;
 const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const sms_1 = require("./sms");
@@ -93,7 +93,6 @@ function addMemberByContact(teamid, owner, name, contact, contactType) {
                 team: teamid,
                 user: user._id
             });
-            console.log(teamMember);
             // If they are a member, make sure they are active
             if (teamMember) {
                 teamMember.active = true;
@@ -326,20 +325,25 @@ function adjustSentCount(teamid, count) {
 }
 ;
 function updateMemberCount(teamid) {
-    return membership_1.MembershipObject.countDocuments({
-        team: teamid,
-        active: true
-    })
-        .then((member_count) => {
-        return team_1.TeamObject.findByIdAndUpdate(teamid, {
-            $set: {
-                members: member_count
-            }
-        }, {
-            new: true
+    return __awaiter(this, void 0, void 0, function* () {
+        return membership_1.MembershipObject.countDocuments({
+            team: teamid,
+            active: true
+        })
+            .then((member_count) => {
+            // Update stripe
+            updateStripeQuantity(teamid, member_count);
+            return team_1.TeamObject.findByIdAndUpdate(teamid, {
+                $set: {
+                    members: member_count
+                }
+            }, {
+                new: true
+            });
         });
     });
 }
+exports.updateMemberCount = updateMemberCount;
 function deactivateMember(memberId) {
     return __awaiter(this, void 0, void 0, function* () {
         var member = yield membership_1.MembershipObject.findOneAndUpdate({
@@ -482,6 +486,33 @@ function getStripeCustomerId(team) {
     });
 }
 exports.getStripeCustomerId = getStripeCustomerId;
+;
+function getStripeSubscriptionId(team) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (team.stripeSubscriptionId) {
+            return team.stripeSubscriptionId;
+        }
+        let defaultPlan = process.env.STRIPE_DEFAULT_PLAN;
+        if (!defaultPlan) {
+            console.log('Missing environment variable: STRIPE_DEFAULT_PLAN');
+            return '';
+        }
+        let result = yield stripe.subscriptions.create({
+            customer: team.stripeCustomerId,
+            items: [
+                { price: defaultPlan },
+            ]
+        });
+        team.stripeSubscriptionId = result.id;
+        team.pricingPlan = defaultPlan;
+        yield team_1.TeamObject.findByIdAndUpdate(team._id, {
+            stripeSubscriptionId: result.id,
+            pricingPlan: defaultPlan
+        });
+        return team.stripeSubscriptionId;
+    });
+}
+exports.getStripeSubscriptionId = getStripeSubscriptionId;
 ;
 /*
   Determines the day of the month on which to create a bill.
@@ -835,3 +866,18 @@ function assignUserToMembersByContact(contact, contactType, userId) {
     });
 }
 exports.assignUserToMembersByContact = assignUserToMembersByContact;
+function updateStripeQuantity(teamid, memberCount) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let team = yield getTeam(teamid);
+        if (!team) {
+            return;
+        }
+        let subscriptionId = yield getStripeSubscriptionId(team);
+        let subscription = yield stripe.subscriptions.retrieve(subscriptionId);
+        if (subscription.items.data.length > 0) {
+            let currentItem = subscription.items.data[0].id;
+            let result = yield stripe.subscriptions.update(subscriptionId, { items: [{ id: currentItem, quantity: memberCount }] });
+        }
+    });
+}
+exports.updateStripeQuantity = updateStripeQuantity;

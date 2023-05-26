@@ -101,7 +101,6 @@ export async function addMemberByContact(teamid: ObjectId, owner: Membership, na
 			user: user._id
 		})
 
-		console.log(teamMember)
 		// If they are a member, make sure they are active
 		if (teamMember) {
 			teamMember.active = true;
@@ -351,12 +350,14 @@ function adjustSentCount(teamid: ObjectId, count: number) {
 	});
 };
 
-function updateMemberCount(teamid: ObjectId) {
+export async function updateMemberCount(teamid: ObjectId) {
 	return MembershipObject.countDocuments({
 		team: teamid,
 		active: true
 	})
 		.then((member_count: number) => {
+			// Update stripe
+			updateStripeQuantity(teamid,member_count)
 			return TeamObject.findByIdAndUpdate(teamid, {
 				$set: {
 					members: member_count
@@ -451,7 +452,7 @@ function sendInvitation(teamMember: ObjectId, owner: Membership) {
 }
 
 export async function notifyTeam(teamid: ObjectId, subject: string, body: string) {
-    if (process.env.NODE_ENV == "development") {
+	if (process.env.NODE_ENV == "development") {
 		console.log(subject)
 		console.log(body)
 	}
@@ -511,6 +512,34 @@ export function getStripeCustomerId(team: Team) {
 };
 
 
+
+export async function getStripeSubscriptionId(team: Team) {
+	if (team.stripeSubscriptionId) {
+		return team.stripeSubscriptionId
+	}
+
+	let defaultPlan = process.env.STRIPE_DEFAULT_PLAN
+	if (!defaultPlan) {
+		console.log('Missing environment variable: STRIPE_DEFAULT_PLAN')
+		return ''
+	}
+
+	let result = await stripe.subscriptions.create({
+		customer: team.stripeCustomerId,
+		items: [
+			{ price: defaultPlan },
+		]
+	});
+		
+	team.stripeSubscriptionId = result.id;
+	team.pricingPlan = defaultPlan
+
+	await TeamObject.findByIdAndUpdate(team._id, {
+			stripeSubscriptionId: result.id,
+			pricingPlan: defaultPlan
+		});
+	return team.stripeSubscriptionId
+};
 
 
 
@@ -765,7 +794,7 @@ export function createPrize(prize: TeamPrize) {
 	return p.save();
 }
 
-export async function availablePrizes(teamid: ObjectId,dryRun=true): Promise<TeamPrize[]> {
+export async function availablePrizes(teamid: ObjectId, dryRun = true): Promise<TeamPrize[]> {
 	return TeamPrizeObject.find({
 		team: teamid,
 		awardedTo: { $exists: false },
@@ -775,31 +804,31 @@ export async function availablePrizes(teamid: ObjectId,dryRun=true): Promise<Tea
 	});
 }
 
-export async function nextAvailablePrize(results: PickWinnersResults,teamid: ObjectId,dryRun = true): Promise<TeamPrize | null> {
+export async function nextAvailablePrize(results: PickWinnersResults, teamid: ObjectId, dryRun = true): Promise<TeamPrize | null> {
 	console.log('nextAvailablePrize() deprecated')
 	let prizes = await TeamPrizeObject.find({
-			team: teamid,
-			awardedTo: undefined,
-			active: true
-		}).sort({
-			name: 1
-		});	
+		team: teamid,
+		awardedTo: undefined,
+		active: true
+	}).sort({
+		name: 1
+	});
 
 	if (!prizes) {
 		return null
 	}
 	if (dryRun) {
 		// See if prize was already awarded, if not, use it.
-		for (let i = 0; i < prizes.length;i++) {
-			let found = results.prizes.find( (p) => (String(p._id) == String(prizes[i]._id)) )
+		for (let i = 0; i < prizes.length; i++) {
+			let found = results.prizes.find((p) => (String(p._id) == String(prizes[i]._id)))
 			if (!found) {
 				return prizes[i]
 			}
 		}
-		return null 
+		return null
 	}
 	return prizes[0]
-	
+
 }
 
 
@@ -810,11 +839,11 @@ function getPrize(prizeid: ObjectId) {
 	});
 }
 
-export async function awardPrizeTo(results:PickWinnersResults,prizeid: ObjectId, memberid: ObjectId,dryRun=false) {
+export async function awardPrizeTo(results: PickWinnersResults, prizeid: ObjectId, memberid: ObjectId, dryRun = false) {
 	console.log('awardPrizeTo() deprecated')
-	let foundPrize = results.prizes.find( p => (String(p._id) == String(prizeid)))
+	let foundPrize = results.prizes.find(p => (String(p._id) == String(prizeid)))
 	if (!foundPrize) {
-		return 
+		return
 	}
 	foundPrize.awardedTo = memberid
 	foundPrize.awardedOn = new Date()
@@ -827,7 +856,7 @@ export async function awardPrizeTo(results:PickWinnersResults,prizeid: ObjectId,
 			}
 		}, {
 			new: true
-		});	
+		});
 	}
 }
 
@@ -870,3 +899,20 @@ export async function assignUserToMembersByContact(contact: string, contactType:
 
 }
 
+
+export async function updateStripeQuantity(teamid:ObjectId,memberCount: number) {
+	let team = await getTeam(teamid) 	
+	if (!team) {
+		return
+	}
+	let subscriptionId = await getStripeSubscriptionId(team) as string
+	let subscription = await stripe.subscriptions.retrieve(subscriptionId)
+			
+	if (subscription.items.data.length > 0) {
+		let currentItem = subscription.items.data[0].id
+		let result = await stripe.subscriptions.update(
+			subscriptionId,
+			{items: [{id: currentItem,quantity: memberCount}]}
+			)
+	} 
+}

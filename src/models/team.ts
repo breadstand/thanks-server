@@ -5,6 +5,8 @@ export interface Team {
     created: Date,
     name: string,
     stripeCustomerId: string,
+    stripeSubscriptionId: string,
+    pricingPlan: string,
     active: boolean,
     months: number,
     lastpick: Date,
@@ -28,6 +30,8 @@ const teamSchema = new Schema<Team>({
         },
     name: String,
     stripeCustomerId: String,
+    stripeSubscriptionId: String,
+    pricingPlan: String,
     active: {
         type: Boolean,
         default: true

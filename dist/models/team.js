@@ -9,6 +9,8 @@ const teamSchema = new mongoose_1.Schema({
     },
     name: String,
     stripeCustomerId: String,
+    stripeSubscriptionId: String,
+    pricingPlan: String,
     active: {
         type: Boolean,
         default: true

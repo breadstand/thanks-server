@@ -550,6 +550,15 @@ exports.teamRoutes.get('/:id/payment_methods', allowTeamOwnersOnly, (req, res) =
         if (customer.invoice_settings) {
             defaultPaymentMethod = customer.invoice_settings.default_payment_method;
         }
+        // If only one payment mehtod, set it as the default
+        if (numberOfPaymentMethods == 1) {
+            defaultPaymentMethod = paymentMethods.data[0].id;
+            yield stripe.customers.update(req.team.stripeCustomerId, {
+                invoice_settings: {
+                    default_payment_method: defaultPaymentMethod
+                }
+            });
+        }
         return res.json({
             success: true,
             data: {
@@ -602,7 +611,7 @@ exports.teamRoutes.post('/:id/payment_methods/:methodid/make_default', allowTeam
         res.status(500).send('Internal server error');
     }
 }));
-exports.teamRoutes.delete('/:id/payment_methods/:methodid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.teamRoutes.delete('/:id/payment_methods/:methodid', allowTeamOwnersOnly, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let paymentMethod = yield stripe.paymentMethods.retrieve(req.params.methodid);
         if (paymentMethod.customer != req.team.stripeCustomerId) {
@@ -632,6 +641,52 @@ exports.teamRoutes.delete('/:id/payment_methods/:methodid', (req, res) => __awai
                 numberOfPaymentMethods: numberOfPaymentMethods
             }
         });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.teamRoutes.put('/:id/price', allowTeamOwnersOnly, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let pricingPlans = [process.env.STRIPE_DEFAULT_PLAN, process.env.STRIPE_PAID_PLAN];
+        let newPrice = req.body.price;
+        // Make sure plan is a valid plan
+        if (!pricingPlans.includes(newPrice)) {
+            return res.status(401).send("Invalid pricing plan");
+        }
+        let subscriptionId = yield (0, teams_1.getStripeSubscriptionId)(req.team);
+        console.log(subscriptionId);
+        let subscription = yield stripe.subscriptions.retrieve(subscriptionId);
+        let memberships = yield (0, teams_1.getMemberships)(req.team.id);
+        let quantity = memberships.length;
+        if (subscription.items.data.length > 0) {
+            let currentItem = subscription.items.data[0].id;
+            let currentPrice = subscription.items.data[0].plan.id;
+            if (currentPrice == newPrice) {
+                return res.json({
+                    success: true,
+                    data: newPrice
+                });
+            }
+            let result = yield stripe.subscriptions.update(subscriptionId, { items: [{ price: newPrice, quantity: quantity }, { id: currentItem, deleted: true }] });
+            req.team.pricingPlan = newPrice;
+            req.team.save();
+            console.log(req.team);
+            return res.json({
+                success: true,
+                data: newPrice
+            });
+        }
+        else {
+            yield stripe.subscriptions.update(subscriptionId, { items: [{ price: newPrice, quantity: quantity }] });
+            req.team.pricingPlan = newPrice;
+            req.team.save();
+            return res.json({
+                success: true,
+                data: newPrice
+            });
+        }
     }
     catch (err) {
         console.log(err);

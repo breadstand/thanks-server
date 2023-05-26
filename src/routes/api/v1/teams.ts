@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express"
 import { TeamPrize, TeamPrizeObject } from "../../../models/team"
 import { User } from "../../../models/user"
-import { availablePrizes, createPrize, createTeam, deactivePrize, deleteTeam, getMemberByUserId, getStripeCustomerId, getTeam, getUsersMemberships, notifyTeam, updateTeam } from "../../../services/teams"
+import { availablePrizes, createPrize, createTeam, deactivePrize, deleteTeam, getMemberByUserId, getStripeCustomerId, getStripeSubscriptionId, getTeam, getUsersMemberships, notifyTeam, updateTeam, getMemberships } from "../../../services/teams"
 import { figureOutDateRange, pickTeamWinners, pickWinners } from "../../../services/posts"
 import { getUser } from "../../../services/users"
 import { ThanksSetObject } from "../../../models/post"
@@ -20,13 +20,13 @@ const stripe = new Stripe(stripeKey, {
 
 export var teamRoutes = Router()
 
-async function allowTeamOwnersOnly(req: Request,res: Response,next:NextFunction) {
+async function allowTeamOwnersOnly(req: Request, res: Response, next: NextFunction) {
     let teamid = new Types.ObjectId(req.params.id)
     req.team = await getTeam(teamid)
     if (!req.team) {
         return res.status(404).send('Team does not exist')
     }
-    
+
     // Only team members can see the sets
     req.usersMembership = await getMemberByUserId(teamid, req.userId)
     if (!req.usersMembership?.owner) {
@@ -120,7 +120,7 @@ teamRoutes.put('/:teamid', async (req, res) => {
             return res.status(401).send("Unauthorized: You are not an owner of this team.")
         }
 
-        let team = await updateTeam(teamid,update)
+        let team = await updateTeam(teamid, update)
         res.json({
             success: true,
             error: '',
@@ -242,7 +242,7 @@ teamRoutes.post('/:teamid/pick-winners', async (req, res) => {
         if (!req.body.dryRun) {
             dryRun = false
         }
-        console.log('dryRun',dryRun)
+        console.log('dryRun', dryRun)
         let teamid = new Types.ObjectId(req.params.teamid)
         // Check the user is a team owner
 
@@ -302,7 +302,7 @@ teamRoutes.put('/:teamid/prizes/:prizeid', async (req, res) => {
         if (req.body.hasOwnProperty('imageWidth')) {
             update.imageWidth = req.body.imageWidth
         }
-        let updatedPrize = await TeamPrizeObject.findByIdAndUpdate(prizeid, {$set: update},{new: true})
+        let updatedPrize = await TeamPrizeObject.findByIdAndUpdate(prizeid, { $set: update }, { new: true })
         res.json({
             success: true,
             error: '',
@@ -351,7 +351,7 @@ teamRoutes.get('/:id/bounties', async (req, res) => {
         if (!usersMembership) {
             return res.status(401).send("Unauthorized: You are not a member of this team.")
         }
-        let bounties = await BountyObject.find({team: teamid, active: true})
+        let bounties = await BountyObject.find({ team: teamid, active: true })
             .populate('createdBy')
             .populate({
                 path: 'ideas',
@@ -360,7 +360,7 @@ teamRoutes.get('/:id/bounties', async (req, res) => {
                     model: 'membership'
                 }
             })
-            .sort({name: 1})
+            .sort({ name: 1 })
         res.json({
             success: true,
             error: '',
@@ -415,7 +415,7 @@ teamRoutes.post('/:teamid/bounties', async (req, res) => {
             body += ` Reward: ${bounty.reward}`
         }
         body += ` Do you have any ideas? .https://thanks.breadstand.us.`
-        notifyTeam(teamid,subject,body)
+        notifyTeam(teamid, subject, body)
 
     } catch (err) {
         console.log(err)
@@ -445,7 +445,7 @@ teamRoutes.put('/:teamid/bounties/:bountyid', async (req, res) => {
             return res.status(401).send("Unauthorized: Bounty posted to the wrong URL")
         }
 
-        let updatedBounty = await BountyObject.findByIdAndUpdate(bountyid, {$set: update},{new: true})
+        let updatedBounty = await BountyObject.findByIdAndUpdate(bountyid, { $set: update }, { new: true })
         res.json({
             success: true,
             error: '',
@@ -479,13 +479,13 @@ teamRoutes.put('/:teamid/bounties/:bountyid/remindMembers', async (req, res) => 
             return res.status(401).send("Unauthorized: Bounty does not belong to team")
         }
         let subject = 'Bounty Reminder!'
-        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}.` 
+        let body = `${usersMembership.name} is looking for ideas for: ${bounty.name}.`
         if (bounty.reward) {
             body += ` Reward: ${bounty.reward}`
         }
         body += ` Do you have any? Go to https://thanks.breadstand.us/ to submit some ideas.`
 
-        notifyTeam(teamid,subject,body)
+        notifyTeam(teamid, subject, body)
 
         res.json({
             success: true,
@@ -511,7 +511,7 @@ teamRoutes.get('/:id/sets', async (req, res) => {
             return res.status(401).send('You are not a member of this team.')
         }
 
-        let sets = await ThanksSetObject.find({team: teamid})
+        let sets = await ThanksSetObject.find({ team: teamid })
         res.json({
             success: true,
             error: '',
@@ -540,7 +540,7 @@ teamRoutes.get('/:id/getNextSet', async (req, res) => {
         }
         let dateRange = await figureOutDateRange(team)
 
-        let sets = await ThanksSetObject.find({team: teamid})
+        let sets = await ThanksSetObject.find({ team: teamid })
         res.json({
             success: true,
             error: '',
@@ -577,7 +577,7 @@ teamRoutes.get('/:id/testPickingWinners', async (req, res) => {
         }
         let dateRange = await figureOutDateRange(team)
 
-        
+
         res.json({
             success: true,
             error: '',
@@ -621,6 +621,16 @@ teamRoutes.get('/:id/payment_methods', allowTeamOwnersOnly, async (req, res) => 
             defaultPaymentMethod = customer.invoice_settings.default_payment_method as string;
         }
 
+        // If only one payment mehtod, set it as the default
+        if (numberOfPaymentMethods == 1) {
+            defaultPaymentMethod = paymentMethods.data[0].id
+            await stripe.customers.update(req.team.stripeCustomerId, {
+                invoice_settings: {
+                    default_payment_method: defaultPaymentMethod
+                }
+            });
+
+        }
 
         return res.json({
             success: true,
@@ -637,7 +647,7 @@ teamRoutes.get('/:id/payment_methods', allowTeamOwnersOnly, async (req, res) => 
 });
 
 
-teamRoutes.get('/:id/payment_methods/secret', allowTeamOwnersOnly ,async (req, res) => {
+teamRoutes.get('/:id/payment_methods/secret', allowTeamOwnersOnly, async (req, res) => {
     try {
 
         let setupIntent = await stripe.setupIntents.create({
@@ -659,24 +669,25 @@ teamRoutes.get('/:id/payment_methods/secret', allowTeamOwnersOnly ,async (req, r
 
 
 
-teamRoutes.post('/:id/payment_methods/:methodid/make_default', allowTeamOwnersOnly,async (req,res) => {
+teamRoutes.post('/:id/payment_methods/:methodid/make_default', allowTeamOwnersOnly, async (req, res) => {
     try {
-        let customer = await stripe.customers.update(req.team.stripeCustomerId,{
+        let customer = await stripe.customers.update(req.team.stripeCustomerId, {
             invoice_settings: {
                 default_payment_method: req.params.methodid
-            }});
+            }
+        });
 
         let defaultPaymentMethod = ''
         if (customer.invoice_settings) {
             defaultPaymentMethod = customer.invoice_settings.default_payment_method as string;
         }
 
-        
+
         res.json({
             success: true,
             data: {
                 defaultPaymentMethod: defaultPaymentMethod,
-            } 
+            }
         })
 
     } catch (err) {
@@ -686,7 +697,7 @@ teamRoutes.post('/:id/payment_methods/:methodid/make_default', allowTeamOwnersOn
 });
 
 
-teamRoutes.delete('/:id/payment_methods/:methodid',allowTeamOwnersOnly,async (req,res) => {
+teamRoutes.delete('/:id/payment_methods/:methodid', allowTeamOwnersOnly, async (req, res) => {
     try {
         let paymentMethod = await stripe.paymentMethods.retrieve(req.params.methodid)
 
@@ -695,7 +706,7 @@ teamRoutes.delete('/:id/payment_methods/:methodid',allowTeamOwnersOnly,async (re
         }
 
         await stripe.paymentMethods.detach(req.params.methodid);
-        
+
         let results = await Promise.all([
             stripe.customers.retrieve(req.team.stripeCustomerId),
             stripe.paymentMethods.list({
@@ -726,12 +737,75 @@ teamRoutes.delete('/:id/payment_methods/:methodid',allowTeamOwnersOnly,async (re
             }
         });
 
-        
+
     } catch (err) {
         console.log(err)
         res.status(500).send('Internal server error')
     }
 });
+
+
+teamRoutes.put('/:id/price', allowTeamOwnersOnly, async (req, res) => {
+    try {
+        let pricingPlans = [process.env.STRIPE_DEFAULT_PLAN, process.env.STRIPE_PAID_PLAN]
+        let newPrice = req.body.price
+        // Make sure plan is a valid plan
+        if (!pricingPlans.includes(newPrice)) {
+            return res.status(401).send("Invalid pricing plan")
+        }
+
+
+        let subscriptionId = await getStripeSubscriptionId(req.team) as string
+        console.log(subscriptionId)
+        let subscription = await stripe.subscriptions.retrieve(subscriptionId)
+
+
+        let memberships = await getMemberships(req.team.id)
+        let quantity = memberships.length
+
+        if (subscription.items.data.length > 0) {
+            let currentItem = subscription.items.data[0].id
+            let currentPrice = subscription.items.data[0].plan.id
+            if (currentPrice == newPrice) {
+                return res.json({
+                    success: true,
+                    data: newPrice
+                });
+            }
+            let result = await stripe.subscriptions.update(
+                subscriptionId,
+                {items: [{ price: newPrice, quantity: quantity },{id: currentItem,deleted: true}]}
+                )
+            req.team.pricingPlan = newPrice
+            req.team.save()
+            console.log(req.team)
+            return res.json({
+                success: true,
+                data: newPrice
+            });
+        } else {
+            await stripe.subscriptions.update(
+                subscriptionId,
+                {items: [{ price: newPrice,quantity: quantity }]}
+                )
+            req.team.pricingPlan = newPrice
+            req.team.save()
+    
+            return res.json({
+                success: true,
+                data: newPrice
+            });
+        }
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+
+
+});
+
+
 
 /*
 userRoutes.get('/:userid/paymentmethods/add',
