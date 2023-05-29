@@ -12,7 +12,7 @@ const PORT = 3001;
 const app = (0, express_1.default)();
 const utils_1 = require("./services/utils");
 app.use(cors({
-    origin: ['https://thanks-a919c.web.app', 'http://localhost:4201']
+    origin: ['https://thanks-a919c.web.app', 'http://localhost:4201', 'https://thanks.breadstand.us']
 }));
 app.use(bodyParser.json());
 const index_1 = require("./routes/api/v1/index");

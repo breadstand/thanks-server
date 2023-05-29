@@ -9,7 +9,7 @@ const app:Application = express();
 import { verifyToken } from './services/utils';
 
 app.use(cors({
-    origin: ['https://thanks-a919c.web.app','http://localhost:4201']
+    origin: ['https://thanks-a919c.web.app','http://localhost:4201','https://thanks.breadstand.us']
 }
 
 ))

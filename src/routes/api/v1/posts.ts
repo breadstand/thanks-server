@@ -4,6 +4,7 @@ import { getMemberByUserId } from "../../../services/teams"
 import { createPost, deactivatePost, getPosts, sendToBountyCreator } from "../../../services/posts"
 import { approveBounty, removeBounty } from "../../../services/bounties"
 import { rmSync } from "fs"
+import { ObjectId } from "mongoose";
 
 const Types = require('mongoose').Types
 
@@ -150,6 +151,77 @@ postsRoutes.post('/', async (req, res) => {
 
 
 
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).send('Internal server error')
+
+    }
+})
+
+
+postsRoutes.post('/stranger', async (req, res) => {
+    try {
+
+        let missingFields = []
+        if (!req.body.thanksFor) {
+            missingFields.push('thanksFor')
+        }
+        if (!req.body.contact || !req.body.contact.contact) {
+            missingFields.push('contact')
+        }
+        if (!req.body.createdBy || !req.body.createdBy) {
+            missingFields.push('createdBy')
+        }
+/*
+
+        let newPost:Post = {
+            _id: new Types.ObjectId(undefined),
+            created: new Date(),
+            lastUpdate: new Date(),
+            createdBy: 
+        }*/
+
+        /*
+
+        let missingFields = []
+        if (!newPost.team) {
+            missingFields.push('team')
+        }
+        if (!newPost.postType || (newPost.postType != 'thanks' && newPost.postType != 'idea')) {
+            missingFields.push('postType')
+        }
+        if (!newPost.thanksTo && !newPost.thanksFor && newPost.postType == 'thanks') {
+            missingFields.push('thanksTo')
+            missingFields.push('thanksFor')
+        }
+        if (!newPost.idea && newPost.postType == 'idea') {
+            missingFields.push('idea')
+        }
+        if (missingFields.length > 0) {
+            return res.json({
+                success: false,
+                error: "The post is incomplete. It's missing the following fields: " + missingFields.join(', '),
+                data: newPost
+            })
+        }
+
+        // Only team owners or post owners can deactivePosts
+        let member = await getMemberByUserId(newPost.team, req.userId)
+        if (!member) {
+            return res.status(401).send("You're not a member of the post's team.")
+        }
+        newPost.createdBy = member._id
+
+        if (!member.owner && String(member._id) != String(newPost.createdBy) && !newPost.active) {
+            return res.status(401).send("You're not the owner of this post or an owner.")
+        }
+        let post = await createPost(newPost)
+        */
+        res.json({
+            success: true,
+            data: {}
+        })
     }
     catch (error) {
         console.log(error)
