@@ -65,20 +65,6 @@ exports.teamRoutes.get('/:teamid', (req, res) => __awaiter(void 0, void 0, void 
         res.status(500).send('Internal server error');
     }
 }));
-exports.teamRoutes.post('/pick-winners-iris', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        let results = yield (0, posts_1.pickWinners)();
-        res.json({
-            success: true,
-            error: '',
-            data: results
-        });
-    }
-    catch (err) {
-        console.log(err);
-        res.status(500).send('Internal server error');
-    }
-}));
 exports.teamRoutes.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let user = yield (0, users_1.getUser)(req.userId);

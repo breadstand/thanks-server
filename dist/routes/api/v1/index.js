@@ -18,6 +18,7 @@ const user_1 = require("../../../models/user");
 const teams_1 = require("../../../services/teams");
 const users_1 = require("../../../services/users");
 const team_1 = require("../../../models/team");
+const posts_1 = require("../../../services/posts");
 const jwt = require('jsonwebtoken');
 exports.apiRootRoutes = (0, express_1.Router)();
 exports.apiRootRoutes.get('/', (req, res) => {
@@ -142,6 +143,20 @@ exports.apiRootRoutes.get('/stats', (req, res) => __awaiter(void 0, void 0, void
             success: false,
             error: "",
             data: stats
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));
+exports.apiRootRoutes.get('/pick_winners_iris', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let results = yield (0, posts_1.pickWinners)();
+        res.json({
+            success: true,
+            error: '',
+            data: results
         });
     }
     catch (err) {
