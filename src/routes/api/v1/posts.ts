@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { PostObject, Post, PostDetailed } from "../../../models/post"
 import { getMemberByUserId } from "../../../services/teams"
-import { createPost, deactivatePost, getPosts, sendToBountyCreator } from "../../../services/posts"
+import { createPost, deactivatePost, getPosts, pickWinners, sendToBountyCreator } from "../../../services/posts"
 import { approveBounty, removeBounty } from "../../../services/bounties"
 import { rmSync } from "fs"
 import { ObjectId } from "mongoose";
@@ -403,6 +403,21 @@ postsRoutes.put('/:id/disapprove', async (req, res) => {
     }
     catch (error) {
         console.log(error)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+postsRoutes.get('/pick-winners-iris', async (req, res) => {
+    try {
+        let results = await pickWinners()
+        res.json({
+            success: true,
+            error: '',
+            data: results
+        })
+    } catch (err) {
+        console.log(err)
         res.status(500).send('Internal server error')
     }
 })

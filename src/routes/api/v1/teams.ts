@@ -61,19 +61,6 @@ teamRoutes.get('/:teamid', async (req, res) => {
 
 })
 
-teamRoutes.post('/pick-winners-iris', async (req, res) => {
-    try {
-        let results = await pickWinners()
-        res.json({
-            success: true,
-            error: '',
-            data: results
-        })
-    } catch (err) {
-        console.log(err)
-        res.status(500).send('Internal server error')
-    }
-})
 
 
 teamRoutes.post('/', async (req, res) => {
