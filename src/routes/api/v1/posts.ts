@@ -406,18 +406,3 @@ postsRoutes.put('/:id/disapprove', async (req, res) => {
         res.status(500).send('Internal server error')
     }
 })
-
-
-postsRoutes.get('/pick-winners-iris', async (req, res) => {
-    try {
-        let results = await pickWinners()
-        res.json({
-            success: true,
-            error: '',
-            data: results
-        })
-    } catch (err) {
-        console.log(err)
-        res.status(500).send('Internal server error')
-    }
-})
