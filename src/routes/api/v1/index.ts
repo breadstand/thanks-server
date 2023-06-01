@@ -165,7 +165,7 @@ apiRootRoutes.get('/stats', async (req, res) => {
 
 
 
-apiRootRoutes.get('/pick-winners-iris', async (req, res) => {
+apiRootRoutes.get('/pick_winners_iris', async (req, res) => {
     try {
         let results = await pickWinners()
         res.json({
