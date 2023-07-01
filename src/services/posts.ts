@@ -395,9 +395,10 @@ export async function pickWinners() {
 	console.log(teams.length)
 	await teams.forEach(async function (team, i) {
 			console.log(team._id)
-			await pickTeamWinners(team._id).catch(err => {
+			let results = await pickTeamWinners(team._id).catch(err => {
 				console.log(err);
 			});
+			console.log(results)
 			processed++;
 		});
 	return processed;
