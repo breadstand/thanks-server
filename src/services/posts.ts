@@ -394,8 +394,8 @@ export async function pickWinners() {
 	let teams = await TeamObject.find({active: 1})
 	console.log(teams.length)
 	await teams.forEach(async function (team, i) {
-			console.log(team._id)
-			let results = await pickTeamWinners(team._id).catch(err => {
+			console.log(team._id,team.name)
+			let results = await pickTeamWinners(team._id,1,false).catch(err => {
 				console.log(err);
 			});
 			console.log(results)
