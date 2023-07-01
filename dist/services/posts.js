@@ -372,9 +372,10 @@ function pickWinners() {
         yield teams.forEach(function (team, i) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(team._id);
-                yield pickTeamWinners(team._id).catch(err => {
+                let results = yield pickTeamWinners(team._id).catch(err => {
                     console.log(err);
                 });
+                console.log(results);
                 processed++;
             });
         });
