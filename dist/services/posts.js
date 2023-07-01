@@ -368,8 +368,10 @@ function pickWinners() {
     return __awaiter(this, void 0, void 0, function* () {
         var processed = 0;
         let teams = yield team_1.TeamObject.find({ active: 1 });
+        console.log(teams.length);
         yield teams.forEach(function (team, i) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(team._id);
                 yield pickTeamWinners(team._id).catch(err => {
                     console.log(err);
                 });
