@@ -343,6 +343,7 @@ async function hasNexus(user:User) {
 
 
 async function notifyUser(userId:ObjectId, subject:string, body:string) {
+	console.log('notifyUser()',body)
 	var user = await getUser(userId);
 
     if (!user) {
@@ -356,6 +357,7 @@ async function notifyUser(userId:ObjectId, subject:string, body:string) {
         }
         else if (contact.contactType == 'phone') {
             let phone = contact.contact
+			console.log('smsSend',phone)
             await smsSend(phone,body);
         }
     })
@@ -380,6 +382,7 @@ export async function sendCodeToVerifyContact(contact:string,contactType:string)
 
 export async function addContact(user:User,contact:string,contactType:string) {
 
+	console.log('addContact')
 	let verifyCode = cryptoRandomString({length: 6, type: 'numeric'});
 	let verifyCodeExpiration = new Date().getTime() + 15*1000 * 60;
 
@@ -400,7 +403,6 @@ export async function addContact(user:User,contact:string,contactType:string) {
 		}
 		user.contacts.push(newContact)
 	}
-
 
 
 	await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts});

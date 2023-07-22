@@ -354,6 +354,7 @@ function hasNexus(user) {
 }
 function notifyUser(userId, subject, body) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('notifyUser()', body);
         var user = yield getUser(userId);
         if (!user) {
             return;
@@ -365,6 +366,7 @@ function notifyUser(userId, subject, body) {
             }
             else if (contact.contactType == 'phone') {
                 let phone = contact.contact;
+                console.log('smsSend', phone);
                 yield (0, sms_1.smsSend)(phone, body);
             }
         }));
@@ -387,6 +389,7 @@ exports.sendCodeToVerifyContact = sendCodeToVerifyContact;
 ;
 function addContact(user, contact, contactType) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('addContact');
         let verifyCode = cryptoRandomString({ length: 6, type: 'numeric' });
         let verifyCodeExpiration = new Date().getTime() + 15 * 1000 * 60;
         let foundContact = user.contacts.find(c => (c.contactType == contactType && c.contact == contact));
