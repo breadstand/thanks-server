@@ -20,7 +20,7 @@ function smsSend(phonenumber, message) {
     return new Promise((resolve, reject) => {
         return client.messages.create(smsMessage).
             then((result) => {
-            //console.log(result);
+            console.log(result);
             return resolve({ to: phonenumber });
         }).catch((err) => {
             return reject(err);

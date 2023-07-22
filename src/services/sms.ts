@@ -23,9 +23,10 @@ export function smsSend(phonenumber:string,message:string) {
     return new Promise( (resolve,reject) => {
         return client.messages.create(smsMessage).
         then( (result:any) => {
-            //console.log(result);
+            console.log(result);
             return resolve({to: phonenumber});
         }).catch ( (err:any) => {
+            console.log('error')
             return reject(err);
         });
     })

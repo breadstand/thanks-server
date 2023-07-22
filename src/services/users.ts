@@ -408,7 +408,7 @@ export async function addContact(user:User,contact:string,contactType:string) {
 	await UserObject.findByIdAndUpdate(user._id,{contacts: user.contacts});
 	await notifyUser(user._id,
 		'Verification Code',
-		'Here is your https://thanks-a919c.web.app/ verification code: '+ verifyCode + 
+		'Here is your https://thanks.breadstqnd.us/ verification code: '+ verifyCode + 
 		'. If you did not request a code, contact Breadstand.');
 
 	return user;

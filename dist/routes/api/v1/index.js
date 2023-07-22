@@ -77,9 +77,7 @@ exports.apiRootRoutes.post('/login', (req, res) => {
 });
 exports.apiRootRoutes.post('/send-code', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log('/send-code');
         let user = yield (0, users_1.sendCodeToVerifyContact)(req.body.contact, req.body.contactType);
-        console.log(user === null || user === void 0 ? void 0 : user.contacts);
         res.json({
             success: true
         });

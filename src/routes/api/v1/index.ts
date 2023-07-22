@@ -77,9 +77,7 @@ apiRootRoutes.post('/login', (req, res) => {
 
 apiRootRoutes.post('/send-code', async (req, res) => {
     try {
-        console.log('/send-code')
         let user = await sendCodeToVerifyContact(req.body.contact, req.body.contactType)
-        console.log(user?.contacts)
         res.json({
             success: true
         })
