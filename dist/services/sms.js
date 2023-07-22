@@ -23,6 +23,7 @@ function smsSend(phonenumber, message) {
             console.log(result);
             return resolve({ to: phonenumber });
         }).catch((err) => {
+            console.log('error');
             return reject(err);
         });
     });
