@@ -422,7 +422,7 @@ function sendInvitation(teamMember, owner) {
     var body = "This is an automated message from Breadstand's Thanks Program.";
     body += `${owner.name} (${owner.contacts[0].contact}) would like you to join the thanks program.`;
     body += " To get started, visit: \n";
-    body += 'https://www.th8nks.com/thanks/?memberid=' + teamMember;
+    body += 'https://thanks.breadstand.us/?memberid=' + teamMember;
     body += "\n";
     body += "Thank you. We hope you have a great day.";
     return notifyMember(teamMember, subject, body);

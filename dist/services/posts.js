@@ -206,7 +206,8 @@ function notifyTeamOfWinners(results, teamid, dryRun = true) {
             let thanksTo = results.winningPostsWithPrizes[i].thanksTo;
             let subject = "Thanks Winner Picked";
             message += `${thanksTo.name} for ${results.winningPostsWithPrizes[i].thanksFor} [from: ${createdBy.name}]`;
-            let prize = results.winningPostsWithPrizes[i].prize;
+            let prizeId = results.winningPostsWithPrizes[i].prize;
+            let prize = yield team_1.TeamPrizeObject.findById(prizeId);
             if (prize === null || prize === void 0 ? void 0 : prize.name) {
                 message += " Prize: " + prize.name;
             }
@@ -291,7 +292,7 @@ function pickTeamWinners(teamid, numberOfMonths = 1, dryRun = true) {
         if (!prizecount) {
             let subject = "No Prizes Selected";
             let body = "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-                "To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.";
+                "To fix this, login to https://thanks.breadstand.us and go to Teams -> Settings and enter in some prizes.";
             results.messages.push(subject);
             results.messages.push(body);
             if (!dryRun) {

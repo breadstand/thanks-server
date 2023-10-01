@@ -218,7 +218,8 @@ async function notifyTeamOfWinners(results:PickWinnersResults,teamid: ObjectId,d
 
 		let subject = "Thanks Winner Picked"
 		message += `${thanksTo.name} for ${results.winningPostsWithPrizes[i].thanksFor} [from: ${createdBy.name}]`;
-		let prize = results.winningPostsWithPrizes[i].prize as TeamPrize
+		let prizeId = results.winningPostsWithPrizes[i].prize
+		let prize = await TeamPrizeObject.findById(prizeId)
 		if (prize?.name) {
 			message += " Prize: " + prize.name;
 		}
@@ -304,7 +305,7 @@ export async function pickTeamWinners(teamid: ObjectId, numberOfMonths = 1, dryR
 	if (!prizecount) {
 		let subject = "No Prizes Selected"
 		let body = "Dear admin for the Thanks team '" + team.name + "', You have not added any prizes. Please add some. " +
-			"To fix this, login to https://www.breadstand.com/thanks and go to Teams -> Settings and enter in some prizes.";
+			"To fix this, login to https://thanks.breadstand.us and go to Teams -> Settings and enter in some prizes.";
 		results.messages.push(subject)
 		results.messages.push(body)
 
