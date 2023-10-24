@@ -162,3 +162,17 @@ exports.apiRootRoutes.get('/pick_winners_iris', (req, res) => __awaiter(void 0, 
         res.status(500).send('Internal server error');
     }
 }));
+exports.apiRootRoutes.get('/nudge_teams_iris', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let results = yield (0, posts_1.nudgeAllTeams)();
+        res.json({
+            success: true,
+            error: '',
+            data: results
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
+}));

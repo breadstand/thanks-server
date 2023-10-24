@@ -8,7 +8,7 @@ import { assignUserToMembersByContact } from '../../../services/teams';
 import { findUserAndVerifyCode, sendCodeToVerifyContact } from '../../../services/users'
 import { TeamObject } from '../../../models/team';
 import { Stats } from '../../../models/stats';
-import { pickWinners } from '../../../services/posts';
+import { nudgeAllTeams, pickWinners } from '../../../services/posts';
 
 const jwt = require('jsonwebtoken');
 
@@ -166,6 +166,21 @@ apiRootRoutes.get('/stats', async (req, res) => {
 apiRootRoutes.get('/pick_winners_iris', async (req, res) => {
     try {
         let results = await pickWinners()
+        res.json({
+            success: true,
+            error: '',
+            data: results
+        })
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Internal server error')
+    }
+})
+
+
+apiRootRoutes.get('/nudge_teams_iris', async (req, res) => {
+    try {
+        let results = await nudgeAllTeams()
         res.json({
             success: true,
             error: '',

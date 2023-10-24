@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sanitizePhone = exports.sanitizeName = exports.sanitizeEmail = exports.verifyToken = void 0;
+exports.getDaysDifference = exports.sanitizePhone = exports.sanitizeName = exports.sanitizeEmail = exports.verifyToken = void 0;
 const jwt = require('jsonwebtoken');
 const Types = require('mongoose').Types;
 function verifyToken(req, res, next) {
@@ -88,4 +88,10 @@ async function emailUs(subject, body) {
         await smtp.send(email, subject, body);
   }
 }
-*/ 
+*/
+function getDaysDifference(date1, date2) {
+    let difference_in_minutes = date1.getTime() - date2.getTime();
+    let difference_in_days = Math.floor((difference_in_minutes / 1000 / 60 / 60 / 24));
+    return difference_in_days;
+}
+exports.getDaysDifference = getDaysDifference;

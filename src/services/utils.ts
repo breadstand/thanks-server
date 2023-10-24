@@ -91,3 +91,11 @@ async function emailUs(subject, body) {
   }
 }
 */
+
+
+export function getDaysDifference(date1: Date,date2: Date) {
+
+  let difference_in_minutes = date1.getTime() - date2.getTime()
+  let difference_in_days = Math.floor((difference_in_minutes / 1000 / 60 / 60 / 24));
+  return difference_in_days
+}

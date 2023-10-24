@@ -2,7 +2,8 @@ import { ObjectId } from "mongoose";
 import { Membership } from "../models/membership";
 import { Team, TeamObject, TeamPrize, TeamPrizeObject } from "../models/team";
 import { Post, PostDetailed, ThanksSetObject, ThanksSet, PostObject, PickWinnersResults } from "../models/post";
-import { availablePrizes, awardPrizeTo, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam } from "./teams";
+import { availablePrizes, awardPrizeTo, getMemberships, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam, updateTeam } from "./teams";
+import { getDaysDifference } from "./utils";
 
 
 export interface DateRange {
@@ -393,13 +394,10 @@ export async function pickWinners() {
 	var processed = 0;
 
 	let teams = await TeamObject.find({active: 1})
-	console.log(teams.length)
 	await teams.forEach(async function (team, i) {
-			console.log(team._id,team.name)
 			let results = await pickTeamWinners(team._id,1,false).catch(err => {
 				console.log(err);
 			});
-			console.log(results)
 			processed++;
 		});
 	return processed;
@@ -478,42 +476,40 @@ async function getTrending() {
 	return processed;
 };
 */
-/*
+
 //
 // The purpose here is to find any members who have sent a thanks in
 // 'days' days. The return will be a list just like getWinners()
 //
-async function getUnappreciativeMembers(teamid) {
+async function getUnappreciativeMembers(teamid:ObjectId) {
 	// The way we will figure this out is to first, get all members of the team.
 	// Second we will get all thanks posted less than team.nudge_days
 	// For each thank we find, we will remove that user from the list
-	var team = await teams.getTeam(teamid);
-	var team_age_in_days = Math.floor((new Date() - team.created) / 1000 / 60 / 60 / 24);
-	if (team_age_in_days < team.nudge_days) {
+	var team = await getTeam(teamid);
+	if (!team?.created) {
+		return []
+	}
+
+	let team_age_in_days = getDaysDifference(new Date(),team.created)
+	if (team_age_in_days < team.nudgeDays) {
 		return [];
 	};
 
 
 	// All members are unappreciative unless proven otherwise
-	var unappreciativemembers = await teams.getMembers(teamid);
+	var unappreciativemembers = await getMemberships(teamid);
 	// Go through all posts in the last nudge_days
 	var since = new Date();
-	since.setDate(since.getDate() - team.nudge_days);
+	since.setDate(since.getDate() - team.nudgeDays);
 
-	var appreciativemembers = await Post.aggregate([{
+	var appreciativemembers = await PostObject.aggregate([{
 			$match: {
 				team: teamid,
 				created: {
 					$gte: since
 				},
 				active: true,
-				$or: [{
-						posttype: 'thanks'
-					},
-					{
-						posttype: undefined
-					}
-				]
+				postType: 'thanks'
 			}
 		},
 		{
@@ -529,60 +525,76 @@ async function getUnappreciativeMembers(teamid) {
 	});
 	return unappreciativemembers;
 };
-*/
-/*
-let default_nudge_subject = "It's been a while since you thanked anyone.";
-let default_nudge_message = "This is the Thanks program. We noticed that you have not thanked anyone in a little while. Do you appreciate other people? Let them know. %loginurl%";
 
-async function nudgeTeam(teamid) {
-	var team = await teams.getTeam(teamid);
-	if (!team.nudge_enabled) {
+
+let default_nudge_subject = "Not Feeling Appreciative? ";
+let default_nudge_message = "This is the Thanks program. We noticed that you have not thanked anyone in a little while. Do you appreciate other people? Let them know. https://thanks.breadstand.us.";
+
+
+async function nudgeTeam(teamid:ObjectId) {
+	var team = await getTeam(teamid);
+	if (!team?.nudgeEnabled) {
 		return [];
 	}
 	var unappreciativemembers = await getUnappreciativeMembers(teamid);
 
 
-	let now = new Date();
-	let teamAgeInDays = Math.floor((now - team.created) / 1000 / 60 / 60 / 24);
-	if (teamAgeInDays < team.nudge_days) {
+	let teamAgeInDays = getDaysDifference(new Date(),team.created)
+	if (teamAgeInDays < team.nudgeDays) {
 		return [];
 	}
 
-	if (team.lastnudge) {
-		let lastnudgedays = Math.floor((now - team.lastnudge) / 1000 / 60 / 60 / 24);
-		if (lastnudgedays < team.nudge_again_days) {
+	if (team.lastNudge) {
+		let lastnudgedays = getDaysDifference(new Date(),team.lastNudge)
+		if (lastnudgedays < team.nudgeAgainDays) {
 			return [];
 		}
 	}
 
-	var message = team.nudge_message;
+	/*
+	var message = team.nudgeMessage;
 	if (!message) {
 		message = default_nudge_message;
-	}
-	var subject = team.nudge_subject;
+	}*/
+	let message = "This is the Thanks program. "
+	message += "We noticed that you have not thanked anyone in a little while. "
+	message += `You are part of the team: ${team.name}. `
+	message += "Do you appreciate other people? "
+	message += "Let them know. https://thanks.breadstand.us.";
+
+
+	var subject = team.nudgeSubject;
 	if (!subject) {
 		subject = default_nudge_subject;
 	}
 
-	await teams.updateTeam(teamid, {
-		lastnudge: new Date()
+
+	await TeamObject.findByIdAndUpdate(teamid, {
+		$set: {
+			lastNudge: new Date()
+		}
+	}, {
+		new: true
 	});
 
-	unappreciativemembers.forEach(async unappreciativemember => {
-		await teams.notifyMember(unappreciativemember, subject, message);
-	});
+	for (let i = 0; i < unappreciativemembers.length;i++) {
+		await notifyMember(unappreciativemembers[i]._id, subject, message);
+	}
 	return unappreciativemembers;
 };
 
-async function nudgeAllTeams() {
+export async function nudgeAllTeams() {
 	var processed = 0;
-	await teams.forEach( async teamid => {
-			await nudgeTeam(teamid);
+
+	let teams = await TeamObject.find({active: 1})
+	await teams.forEach(async function (team, i) {
+			let results = await nudgeTeam(team._id)
 			processed++;
 		});
 	return processed;
 }
 
+/*
 function getWins(tomemberid, limit = 20) {
 
 	return Post.find({
