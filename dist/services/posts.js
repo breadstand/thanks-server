@@ -9,11 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivatePost = exports.nudgeAllTeams = exports.pickWinners = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.sendToBountyCreator = exports.createPost = void 0;
+exports.deactivatePost = exports.nudgeAllTeams = exports.pickWinners = exports.pickTeamWinners = exports.figureOutDateRange = exports.getPosts = exports.notifyBountyCreator = exports.createPost = void 0;
+const membership_1 = require("../models/membership");
 const team_1 = require("../models/team");
 const post_1 = require("../models/post");
 const teams_1 = require("./teams");
 const utils_1 = require("./utils");
+const bounty_1 = require("../models/bounty");
 function sanitizeFor(postfor, size = 280) {
     if (!postfor) {
         return '';
@@ -32,7 +34,7 @@ function createPost(newPost) {
             ]);
         }
         else {
-            sendToBountyCreator(thankspost._id);
+            notifyBountyCreator(thankspost._id);
             (0, teams_1.incrementIdeaCount)(thankspost.createdBy);
         }
     }).then(results => {
@@ -63,27 +65,23 @@ function sendToTeam(thanksid) {
         console.log(err);
     });
 }
-function sendToBountyCreator(thanksid) {
-    return post_1.PostObject.findById(thanksid)
-        .populate({
-        path: "createdBy"
-    })
-        .populate({
-        path: "thanksTo"
-    })
-        .populate('bounty')
-        .then((post) => {
-        if (!post.bounty) {
+function notifyBountyCreator(thanksid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let post = yield post_1.PostObject.findById(thanksid);
+        if (!post) {
             return;
         }
-        var subject = `New Idea For: ${post.bounty.name}!`;
-        var body = `${subject} ${post.createdBy.name} submitted an idea for: ${post.bounty.name}. ${post.idea} .https://thanks.breadstand.us.`;
-        return (0, teams_1.notifyMember)(post.bounty.createdBy, subject, body);
-    }).catch(err => {
-        console.log(err);
+        let createdBy = yield membership_1.MembershipObject.findById(post === null || post === void 0 ? void 0 : post.createdBy);
+        let bounty = yield bounty_1.BountyObject.findById(post === null || post === void 0 ? void 0 : post.bounty);
+        if (!createdBy || !bounty) {
+            return;
+        }
+        let subject = `New Idea For: ${bounty.name}!`;
+        let body = `${createdBy.name} submitted an idea for: ${bounty.name}. ${post.idea} https://thanks.breadstand.us.`;
+        return (0, teams_1.notifyMember)(bounty.createdBy, subject, body);
     });
 }
-exports.sendToBountyCreator = sendToBountyCreator;
+exports.notifyBountyCreator = notifyBountyCreator;
 function getPosts(teamid, filter) {
     var count = 20;
     var query = {

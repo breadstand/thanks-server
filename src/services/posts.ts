@@ -1,9 +1,10 @@
 import { ObjectId } from "mongoose";
-import { Membership } from "../models/membership";
+import { Membership, MembershipObject } from "../models/membership";
 import { Team, TeamObject, TeamPrize, TeamPrizeObject } from "../models/team";
 import { Post, PostDetailed, ThanksSetObject, ThanksSet, PostObject, PickWinnersResults } from "../models/post";
 import { availablePrizes, awardPrizeTo, getMemberships, getTeam, incrementIdeaCount, incrementReceivedCount, incrementSentCount, nextAvailablePrize, notifyMember, notifyOwners, notifyTeam, updateTeam } from "./teams";
 import { getDaysDifference } from "./utils";
+import { BountyObject } from "../models/bounty";
 
 
 export interface DateRange {
@@ -30,7 +31,7 @@ export function createPost(newPost: Post) {
 					incrementReceivedCount(thankspost.thanksTo as ObjectId)
 				]);
 			} else {
-				sendToBountyCreator(thankspost._id);
+				notifyBountyCreator(thankspost._id);
 				incrementIdeaCount(thankspost.createdBy as ObjectId)
 			}
 		}).then(results => {
@@ -61,26 +62,20 @@ function sendToTeam(thanksid: ObjectId) {
 		});
 }
 
-export function sendToBountyCreator(thanksid: ObjectId) {
-	return PostObject.findById(thanksid)
-		.populate({
-			path: "createdBy"
-		})
-		.populate({
-			path: "thanksTo"
-		})
-		.populate('bounty')
-		.then((post: any) => {
-			if (!post.bounty) {
-				return;
-			}
-			var subject = `New Idea For: ${post.bounty.name}!`;
-			var body = `${subject} ${post.createdBy.name} submitted an idea for: ${post.bounty.name}. ${post.idea} .https://thanks.breadstand.us.`;
+export async function  notifyBountyCreator(thanksid: ObjectId) {
+	let post = await PostObject.findById(thanksid)
+	if (!post) {
+		return
+	}
+	let createdBy = await MembershipObject.findById(post?.createdBy)
+	let bounty = await BountyObject.findById(post?.bounty)
+	if (!createdBy || !bounty) {
+		return 
+	}
 
-			return notifyMember(post.bounty.createdBy, subject, body);
-		}).catch(err => {
-			console.log(err);
-		});
+	let subject = `New Idea For: ${bounty.name}!`;
+	let body = `${createdBy.name} submitted an idea for: ${bounty.name}. ${post.idea} https://thanks.breadstand.us.`;
+	return notifyMember(bounty.createdBy,subject,body)
 }
 
 

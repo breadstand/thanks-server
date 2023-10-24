@@ -1,10 +1,8 @@
 import { Router } from "express"
 import { PostObject, Post, PostDetailed } from "../../../models/post"
 import { getMemberByUserId } from "../../../services/teams"
-import { createPost, deactivatePost, getPosts, pickWinners, sendToBountyCreator } from "../../../services/posts"
+import { createPost, deactivatePost, getPosts, pickWinners } from "../../../services/posts"
 import { approveBounty, removeBounty } from "../../../services/bounties"
-import { rmSync } from "fs"
-import { ObjectId } from "mongoose";
 
 const Types = require('mongoose').Types
 
@@ -275,9 +273,6 @@ postsRoutes.put('/:id', async (req, res) => {
                 data: updatedPost
             })
 
-        if (updatedPost?.bounty) {
-            sendToBountyCreator(updatedPost._id);
-        }
     }
     catch (error) {
         console.log(error)
